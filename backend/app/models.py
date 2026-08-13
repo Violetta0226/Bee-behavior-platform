@@ -115,7 +115,70 @@ class ItemsPublic(SQLModel):
 # Generic message
 class Message(SQLModel):
     message: str
+# Shared properties for videos
+class VideoBase(SQLModel):
+    original_filename: str = Field(
+        min_length=1,
+        max_length=255,
+    )
+    scene_type: str = Field(
+        max_length=20,
+        index=True,
+    )
+    file_size: int = Field(
+        default=0,
+        ge=0,
+    )
+    content_type: str | None = Field(
+        default=None,
+        max_length=100,
+    )
+    status: str = Field(
+        default="UPLOADED",
+        max_length=30,
+        index=True,
+    )
 
+
+# Database model
+class Video(VideoBase, table=True):
+    id: uuid.UUID = Field(
+        default_factory=uuid.uuid4,
+        primary_key=True,
+    )
+
+    stored_filename: str = Field(
+        max_length=255,
+        unique=True,
+        index=True,
+    )
+
+    file_path: str = Field(
+        max_length=1024,
+    )
+
+    owner_id: uuid.UUID = Field(
+        foreign_key="user.id",
+        nullable=False,
+        ondelete="CASCADE",
+    )
+
+    created_at: datetime | None = Field(
+        default_factory=get_datetime_utc,
+        sa_type=DateTime(timezone=True),  # type: ignore
+    )
+
+
+# Properties returned by the API
+class VideoPublic(VideoBase):
+    id: uuid.UUID
+    owner_id: uuid.UUID
+    created_at: datetime | None = None
+
+
+class VideosPublic(SQLModel):
+    data: list[VideoPublic]
+    count: int
 
 # JSON payload containing access token
 class Token(SQLModel):
