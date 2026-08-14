@@ -1,4 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router"
+import {
+  createFileRoute,
+  useNavigate,
+} from "@tanstack/react-router"
 import {
   FileVideo,
   LoaderCircle,
@@ -30,20 +33,13 @@ export const Route = createFileRoute("/_layout/videos")({
 
 type SceneType = "OUTDOOR" | "INDOOR"
 
-type VideoStatus =
-  | "UPLOADED"
-  | "PENDING"
-  | "PROCESSING"
-  | "COMPLETED"
-  | "FAILED"
-
 type VideoItem = {
   id: string
   original_filename: string
   scene_type: SceneType
   file_size: number
   content_type: string | null
-  status: VideoStatus | string
+  status: string
   owner_id: string
   created_at: string | null
 }
@@ -55,7 +51,7 @@ type VideosResponse = {
 
 const API_BASE = "/api/v1"
 
-function getAuthHeaders(): HeadersInit {
+function getAuthHeaders(): Record<string, string> {
   const token = localStorage.getItem("access_token")
 
   if (!token) {
@@ -68,6 +64,8 @@ function getAuthHeaders(): HeadersInit {
 }
 
 function VideosPage() {
+  const navigate = useNavigate()
+
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const [sceneType, setSceneType] =
@@ -91,12 +89,13 @@ function VideosPage() {
   const [deletingId, setDeletingId] =
     useState<string | null>(null)
 
+  const [creatingTaskId, setCreatingTaskId] =
+    useState<string | null>(null)
+
   const [errorMessage, setErrorMessage] =
     useState<string | null>(null)
 
-  /**
-   * 从后端读取真实视频列表
-   */
+  // 读取真实视频列表
   const loadVideos = useCallback(async () => {
     setIsLoading(true)
     setErrorMessage(null)
@@ -132,9 +131,6 @@ function VideosPage() {
     }
   }, [])
 
-  /**
-   * 页面第一次打开时自动加载视频
-   */
   useEffect(() => {
     void loadVideos()
   }, [loadVideos])
@@ -181,9 +177,7 @@ function VideosPage() {
     handleFile(event.dataTransfer.files?.[0])
   }
 
-  /**
-   * 真正调用 FastAPI 上传视频
-   */
+  // 上传真实视频
   const handleUpload = async () => {
     if (!selectedFile) {
       alert("请先选择视频")
@@ -252,9 +246,7 @@ function VideosPage() {
     }
   }
 
-  /**
-   * 真正调用 FastAPI 删除视频
-   */
+  // 删除真实视频
   const handleDelete = async (
     video: VideoItem,
   ) => {
@@ -305,16 +297,56 @@ function VideosPage() {
     }
   }
 
-  /**
-   * 分析任务接口还没开发，
-   * 当前先保留按钮入口。
-   */
-  const handleAnalyze = (
+  // 创建真实分析任务
+  const handleAnalyze = async (
     video: VideoItem,
   ) => {
-    alert(
-      `下一阶段将创建分析任务：${video.original_filename}`,
-    )
+    setCreatingTaskId(video.id)
+    setErrorMessage(null)
+
+    try {
+      const response = await fetch(
+        `${API_BASE}/tasks/`,
+        {
+          method: "POST",
+          headers: {
+            ...getAuthHeaders(),
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            video_id: video.id,
+            model_name: "baseline-v1",
+          }),
+        },
+      )
+
+      if (!response.ok) {
+        const errorBody = await response
+          .json()
+          .catch(() => null)
+
+        throw new Error(
+          errorBody?.detail ??
+            `创建分析任务失败：${response.status}`,
+        )
+      }
+
+      await response.json()
+
+      await navigate({
+        to: "/tasks",
+      })
+    } catch (error) {
+      console.error(error)
+
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "创建分析任务失败",
+      )
+    } finally {
+      setCreatingTaskId(null)
+    }
   }
 
   return (
@@ -408,8 +440,7 @@ function VideosPage() {
                     </p>
 
                     <p className="mt-1 text-xs text-muted-foreground">
-                      个体检测 · 多目标跟踪 ·
-                      进出巢统计
+                      个体检测 · 多目标跟踪 · 进出巢统计
                     </p>
                   </div>
                 </div>
@@ -437,8 +468,7 @@ function VideosPage() {
                     </p>
 
                     <p className="mt-1 text-xs text-muted-foreground">
-                      个体识别 · 姿态方向 ·
-                      群体活动分析
+                      个体识别 · 姿态方向 · 群体活动分析
                     </p>
                   </div>
                 </div>
@@ -446,7 +476,7 @@ function VideosPage() {
             </div>
           </div>
 
-          {/* 文件上传 */}
+          {/* 文件拖拽区域 */}
           <div
             onDragOver={(event) => {
               event.preventDefault()
@@ -535,16 +565,14 @@ function VideosPage() {
 
       {/* 视频列表 */}
       <div className="rounded-xl border">
-        <div className="flex items-center justify-between border-b p-6">
-          <div>
-            <h2 className="text-lg font-semibold">
-              视频数据
-            </h2>
+        <div className="border-b p-6">
+          <h2 className="text-lg font-semibold">
+            视频数据
+          </h2>
 
-            <p className="text-sm text-muted-foreground">
-              共 {videos.length} 个监测视频
-            </p>
-          </div>
+          <p className="text-sm text-muted-foreground">
+            共 {videos.length} 个监测视频
+          </p>
         </div>
 
         {isLoading ? (
@@ -638,17 +666,35 @@ function VideosPage() {
 
                     <td className="px-6 py-4">
                       <div className="flex justify-end gap-2">
+                        {/* 开始分析 */}
                         <button
                           type="button"
                           onClick={() =>
-                            handleAnalyze(video)
+                            void handleAnalyze(
+                              video,
+                            )
                           }
-                          className="flex items-center gap-1 rounded-lg border px-3 py-2 text-xs font-medium transition hover:bg-muted"
+                          disabled={
+                            creatingTaskId ===
+                            video.id
+                          }
+                          className="flex items-center gap-1 rounded-lg border px-3 py-2 text-xs font-medium transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                          <Play className="size-3.5" />
-                          开始分析
+                          {creatingTaskId ===
+                          video.id ? (
+                            <>
+                              <LoaderCircle className="size-3.5 animate-spin" />
+                              创建任务中
+                            </>
+                          ) : (
+                            <>
+                              <Play className="size-3.5" />
+                              开始分析
+                            </>
+                          )}
                         </button>
 
+                        {/* 删除 */}
                         <button
                           type="button"
                           onClick={() =>
