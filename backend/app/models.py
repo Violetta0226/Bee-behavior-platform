@@ -179,7 +179,94 @@ class VideoPublic(VideoBase):
 class VideosPublic(SQLModel):
     data: list[VideoPublic]
     count: int
+# Shared properties for analysis tasks
+class AnalysisTaskBase(SQLModel):
+    task_type: str = Field(
+        default="VIDEO_ANALYSIS",
+        max_length=50,
+        index=True,
+    )
 
+    status: str = Field(
+        default="PENDING",
+        max_length=30,
+        index=True,
+    )
+
+    progress: int = Field(
+        default=0,
+        ge=0,
+        le=100,
+    )
+
+    model_name: str | None = Field(
+        default=None,
+        max_length=100,
+    )
+
+    error_message: str | None = Field(
+        default=None,
+        max_length=1000,
+    )
+
+
+# Database model
+class AnalysisTask(AnalysisTaskBase, table=True):
+    id: uuid.UUID = Field(
+        default_factory=uuid.uuid4,
+        primary_key=True,
+    )
+
+    video_id: uuid.UUID = Field(
+        foreign_key="video.id",
+        nullable=False,
+        ondelete="CASCADE",
+        index=True,
+    )
+
+    owner_id: uuid.UUID = Field(
+        foreign_key="user.id",
+        nullable=False,
+        ondelete="CASCADE",
+        index=True,
+    )
+
+    created_at: datetime | None = Field(
+        default_factory=get_datetime_utc,
+        sa_type=DateTime(timezone=True),  # type: ignore
+    )
+
+    started_at: datetime | None = Field(
+        default=None,
+        sa_type=DateTime(timezone=True),  # type: ignore
+    )
+
+    completed_at: datetime | None = Field(
+        default=None,
+        sa_type=DateTime(timezone=True),  # type: ignore
+    )
+
+class AnalysisTaskCreate(SQLModel):
+    video_id: uuid.UUID
+
+    model_name: str | None = Field(
+        default=None,
+        max_length=100,
+    )
+# Properties returned by the API
+class AnalysisTaskPublic(AnalysisTaskBase):
+    id: uuid.UUID
+    video_id: uuid.UUID
+    owner_id: uuid.UUID
+
+    created_at: datetime | None = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
+
+
+class AnalysisTasksPublic(SQLModel):
+    data: list[AnalysisTaskPublic]
+    count: int
 # JSON payload containing access token
 class Token(SQLModel):
     access_token: str
