@@ -1,12 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router"
 import {
   FileVideo,
+  LoaderCircle,
   Play,
+  RefreshCw,
   Trash2,
   Upload,
   Video,
 } from "lucide-react"
 import {
+  useCallback,
+  useEffect,
   useRef,
   useState,
   type ChangeEvent,
@@ -26,123 +30,333 @@ export const Route = createFileRoute("/_layout/videos")({
 
 type SceneType = "OUTDOOR" | "INDOOR"
 
+type VideoStatus =
+  | "UPLOADED"
+  | "PENDING"
+  | "PROCESSING"
+  | "COMPLETED"
+  | "FAILED"
+
 type VideoItem = {
-  id: number
-  name: string
-  sceneType: SceneType
-  size: string
-  status: "已上传" | "待分析" | "分析完成"
-  createdAt: string
+  id: string
+  original_filename: string
+  scene_type: SceneType
+  file_size: number
+  content_type: string | null
+  status: VideoStatus | string
+  owner_id: string
+  created_at: string | null
+}
+
+type VideosResponse = {
+  data: VideoItem[]
+  count: number
+}
+
+const API_BASE = "/api/v1"
+
+function getAuthHeaders(): HeadersInit {
+  const token = localStorage.getItem("access_token")
+
+  if (!token) {
+    return {}
+  }
+
+  return {
+    Authorization: `Bearer ${token}`,
+  }
 }
 
 function VideosPage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const [sceneType, setSceneType] = useState<SceneType>("OUTDOOR")
-  const [selectedFile, setSelectedFile] = useState<File | null>(null)
-  const [isDragging, setIsDragging] = useState(false)
+  const [sceneType, setSceneType] =
+    useState<SceneType>("OUTDOOR")
 
-  /*
-   * 第一版先使用演示数据。
-   * 后续接入 FastAPI 后，这里会改成从数据库读取。
+  const [selectedFile, setSelectedFile] =
+    useState<File | null>(null)
+
+  const [isDragging, setIsDragging] =
+    useState(false)
+
+  const [videos, setVideos] =
+    useState<VideoItem[]>([])
+
+  const [isLoading, setIsLoading] =
+    useState(true)
+
+  const [isUploading, setIsUploading] =
+    useState(false)
+
+  const [deletingId, setDeletingId] =
+    useState<string | null>(null)
+
+  const [errorMessage, setErrorMessage] =
+    useState<string | null>(null)
+
+  /**
+   * 从后端读取真实视频列表
    */
-  const [videos, setVideos] = useState<VideoItem[]>([
-    {
-      id: 1,
-      name: "outdoor_demo_01.mp4",
-      sceneType: "OUTDOOR",
-      size: "128.4 MB",
-      status: "分析完成",
-      createdAt: "2026-08-13 21:35",
-    },
-    {
-      id: 2,
-      name: "indoor_ir_demo_01.mp4",
-      sceneType: "INDOOR",
-      size: "86.7 MB",
-      status: "待分析",
-      createdAt: "2026-08-13 21:42",
-    },
-  ])
+  const loadVideos = useCallback(async () => {
+    setIsLoading(true)
+    setErrorMessage(null)
+
+    try {
+      const response = await fetch(
+        `${API_BASE}/videos/?skip=0&limit=100`,
+        {
+          headers: getAuthHeaders(),
+        },
+      )
+
+      if (!response.ok) {
+        throw new Error(
+          `读取视频列表失败：${response.status}`,
+        )
+      }
+
+      const result =
+        (await response.json()) as VideosResponse
+
+      setVideos(result.data)
+    } catch (error) {
+      console.error(error)
+
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "读取视频列表失败",
+      )
+    } finally {
+      setIsLoading(false)
+    }
+  }, [])
+
+  /**
+   * 页面第一次打开时自动加载视频
+   */
+  useEffect(() => {
+    void loadVideos()
+  }, [loadVideos])
 
   const handleFile = (file?: File) => {
     if (!file) return
 
-    const isVideo = file.type.startsWith("video/")
+    const extension =
+      file.name.split(".").pop()?.toLowerCase()
 
-    if (!isVideo) {
-      alert("请选择视频文件")
+    const allowedExtensions = [
+      "mp4",
+      "mov",
+      "avi",
+      "mkv",
+      "webm",
+    ]
+
+    if (
+      !extension ||
+      !allowedExtensions.includes(extension)
+    ) {
+      alert(
+        "请选择 MP4、MOV、AVI、MKV 或 WEBM 视频文件",
+      )
       return
     }
 
     setSelectedFile(file)
   }
 
- const handleFileChange = (
-  event: ChangeEvent<HTMLInputElement>,
-) => {
+  const handleFileChange = (
+    event: ChangeEvent<HTMLInputElement>,
+  ) => {
     handleFile(event.target.files?.[0])
   }
 
   const handleDrop = (
-  event: DragEvent<HTMLDivElement>,
-) => {
+    event: DragEvent<HTMLDivElement>,
+  ) => {
     event.preventDefault()
     setIsDragging(false)
 
     handleFile(event.dataTransfer.files?.[0])
   }
 
-  const handleUpload = () => {
+  /**
+   * 真正调用 FastAPI 上传视频
+   */
+  const handleUpload = async () => {
     if (!selectedFile) {
       alert("请先选择视频")
       return
     }
 
-    const newVideo: VideoItem = {
-      id: Date.now(),
-      name: selectedFile.name,
-      sceneType,
-      size: formatFileSize(selectedFile.size),
-      status: "待分析",
-      createdAt: new Date().toLocaleString(),
-    }
+    setIsUploading(true)
+    setErrorMessage(null)
 
-    setVideos((currentVideos) => [newVideo, ...currentVideos])
-    setSelectedFile(null)
+    try {
+      const formData = new FormData()
 
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ""
+      formData.append(
+        "scene_type",
+        sceneType,
+      )
+
+      formData.append(
+        "file",
+        selectedFile,
+      )
+
+      const response = await fetch(
+        `${API_BASE}/videos/upload`,
+        {
+          method: "POST",
+          headers: getAuthHeaders(),
+          body: formData,
+        },
+      )
+
+      if (!response.ok) {
+        const errorBody = await response
+          .json()
+          .catch(() => null)
+
+        throw new Error(
+          errorBody?.detail ??
+            `上传失败：${response.status}`,
+        )
+      }
+
+      const uploadedVideo =
+        (await response.json()) as VideoItem
+
+      setVideos((currentVideos) => [
+        uploadedVideo,
+        ...currentVideos,
+      ])
+
+      setSelectedFile(null)
+
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ""
+      }
+    } catch (error) {
+      console.error(error)
+
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "视频上传失败",
+      )
+    } finally {
+      setIsUploading(false)
     }
   }
 
-  const handleDelete = (id: number) => {
-    setVideos((currentVideos) =>
-      currentVideos.filter((video) => video.id !== id),
+  /**
+   * 真正调用 FastAPI 删除视频
+   */
+  const handleDelete = async (
+    video: VideoItem,
+  ) => {
+    const confirmed = window.confirm(
+      `确定删除视频“${video.original_filename}”吗？`,
     )
+
+    if (!confirmed) return
+
+    setDeletingId(video.id)
+    setErrorMessage(null)
+
+    try {
+      const response = await fetch(
+        `${API_BASE}/videos/${video.id}`,
+        {
+          method: "DELETE",
+          headers: getAuthHeaders(),
+        },
+      )
+
+      if (!response.ok) {
+        const errorBody = await response
+          .json()
+          .catch(() => null)
+
+        throw new Error(
+          errorBody?.detail ??
+            `删除失败：${response.status}`,
+        )
+      }
+
+      setVideos((currentVideos) =>
+        currentVideos.filter(
+          (item) => item.id !== video.id,
+        ),
+      )
+    } catch (error) {
+      console.error(error)
+
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "删除视频失败",
+      )
+    } finally {
+      setDeletingId(null)
+    }
   }
 
-  const handleAnalyze = (video: VideoItem) => {
-    alert(`即将分析：${video.name}`)
+  /**
+   * 分析任务接口还没开发，
+   * 当前先保留按钮入口。
+   */
+  const handleAnalyze = (
+    video: VideoItem,
+  ) => {
+    alert(
+      `下一阶段将创建分析任务：${video.original_filename}`,
+    )
   }
 
   return (
     <div className="space-y-8">
       {/* 页面标题 */}
-      <div>
-        <p className="text-sm text-muted-foreground">
-          巢影蜂析 · 多模态视频数据中心
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <p className="text-sm text-muted-foreground">
+            巢影蜂析 · 多模态视频数据中心
+          </p>
 
-        <h1 className="mt-2 text-3xl font-bold">
-          视频管理
-        </h1>
+          <h1 className="mt-2 text-3xl font-bold">
+            视频管理
+          </h1>
 
-        <p className="mt-2 text-muted-foreground">
-          管理巢外可见光视频与巢内红外视频，为蜜蜂个体识别、
-          连续跟踪及行为量化分析提供数据输入。
-        </p>
+          <p className="mt-2 text-muted-foreground">
+            管理巢外可见光视频与巢内红外视频，
+            为蜜蜂个体识别、连续跟踪及行为量化分析提供数据输入。
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => void loadVideos()}
+          disabled={isLoading}
+          className="flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition hover:bg-muted disabled:opacity-50"
+        >
+          <RefreshCw
+            className={`size-4 ${
+              isLoading ? "animate-spin" : ""
+            }`}
+          />
+          刷新数据
+        </button>
       </div>
+
+      {/* 错误提示 */}
+      {errorMessage && (
+        <div className="rounded-xl border border-red-500/30 bg-red-500/5 px-5 py-4 text-sm text-red-500">
+          {errorMessage}
+        </div>
+      )}
 
       {/* 上传区域 */}
       <div className="rounded-xl border">
@@ -174,7 +388,9 @@ function VideosPage() {
             <div className="grid gap-3 md:grid-cols-2">
               <button
                 type="button"
-                onClick={() => setSceneType("OUTDOOR")}
+                onClick={() =>
+                  setSceneType("OUTDOOR")
+                }
                 className={`rounded-xl border p-4 text-left transition ${
                   sceneType === "OUTDOOR"
                     ? "border-amber-500 bg-amber-500/5"
@@ -192,7 +408,8 @@ function VideosPage() {
                     </p>
 
                     <p className="mt-1 text-xs text-muted-foreground">
-                      个体检测 · 多目标跟踪 · 进出巢统计
+                      个体检测 · 多目标跟踪 ·
+                      进出巢统计
                     </p>
                   </div>
                 </div>
@@ -200,7 +417,9 @@ function VideosPage() {
 
               <button
                 type="button"
-                onClick={() => setSceneType("INDOOR")}
+                onClick={() =>
+                  setSceneType("INDOOR")
+                }
                 className={`rounded-xl border p-4 text-left transition ${
                   sceneType === "INDOOR"
                     ? "border-amber-500 bg-amber-500/5"
@@ -218,7 +437,8 @@ function VideosPage() {
                     </p>
 
                     <p className="mt-1 text-xs text-muted-foreground">
-                      个体识别 · 姿态方向 · 群体活动分析
+                      个体识别 · 姿态方向 ·
+                      群体活动分析
                     </p>
                   </div>
                 </div>
@@ -226,13 +446,15 @@ function VideosPage() {
             </div>
           </div>
 
-          {/* 拖拽上传 */}
+          {/* 文件上传 */}
           <div
             onDragOver={(event) => {
               event.preventDefault()
               setIsDragging(true)
             }}
-            onDragLeave={() => setIsDragging(false)}
+            onDragLeave={() =>
+              setIsDragging(false)
+            }
             onDrop={handleDrop}
             className={`flex min-h-56 flex-col items-center justify-center rounded-xl border-2 border-dashed p-8 text-center transition ${
               isDragging
@@ -251,7 +473,9 @@ function VideosPage() {
                 </p>
 
                 <p className="mt-1 text-sm text-muted-foreground">
-                  {formatFileSize(selectedFile.size)}
+                  {formatFileSize(
+                    selectedFile.size,
+                  )}
                 </p>
               </>
             ) : (
@@ -277,7 +501,9 @@ function VideosPage() {
             <div className="mt-5 flex flex-wrap justify-center gap-3">
               <button
                 type="button"
-                onClick={() => fileInputRef.current?.click()}
+                onClick={() =>
+                  fileInputRef.current?.click()
+                }
                 className="rounded-lg border px-4 py-2 text-sm font-medium transition hover:bg-muted"
               >
                 选择视频
@@ -285,11 +511,22 @@ function VideosPage() {
 
               <button
                 type="button"
-                onClick={handleUpload}
-                disabled={!selectedFile}
-                className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-black transition hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-40"
+                onClick={() =>
+                  void handleUpload()
+                }
+                disabled={
+                  !selectedFile ||
+                  isUploading
+                }
+                className="flex items-center gap-2 rounded-lg bg-amber-500 px-4 py-2 text-sm font-medium text-black transition hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-40"
               >
-                确认上传
+                {isUploading && (
+                  <LoaderCircle className="size-4 animate-spin" />
+                )}
+
+                {isUploading
+                  ? "正在上传..."
+                  : "确认上传"}
               </button>
             </div>
           </div>
@@ -310,7 +547,14 @@ function VideosPage() {
           </div>
         </div>
 
-        {videos.length === 0 ? (
+        {isLoading ? (
+          <div className="flex h-52 items-center justify-center">
+            <div className="text-center text-muted-foreground">
+              <LoaderCircle className="mx-auto mb-3 size-8 animate-spin" />
+              <p>正在读取视频数据...</p>
+            </div>
+          </div>
+        ) : videos.length === 0 ? (
           <div className="flex h-52 items-center justify-center">
             <div className="text-center text-muted-foreground">
               <FileVideo className="mx-auto mb-3 size-8" />
@@ -360,20 +604,24 @@ function VideosPage() {
                           <FileVideo className="size-4" />
                         </div>
 
-                        <span className="font-medium">
-                          {video.name}
+                        <span className="max-w-72 truncate font-medium">
+                          {video.original_filename}
                         </span>
                       </div>
                     </td>
 
                     <td className="px-6 py-4">
                       <SceneBadge
-                        sceneType={video.sceneType}
+                        sceneType={
+                          video.scene_type
+                        }
                       />
                     </td>
 
                     <td className="px-6 py-4 text-muted-foreground">
-                      {video.size}
+                      {formatFileSize(
+                        video.file_size,
+                      )}
                     </td>
 
                     <td className="px-6 py-4">
@@ -383,14 +631,18 @@ function VideosPage() {
                     </td>
 
                     <td className="px-6 py-4 text-muted-foreground">
-                      {video.createdAt}
+                      {formatDate(
+                        video.created_at,
+                      )}
                     </td>
 
                     <td className="px-6 py-4">
                       <div className="flex justify-end gap-2">
                         <button
                           type="button"
-                          onClick={() => handleAnalyze(video)}
+                          onClick={() =>
+                            handleAnalyze(video)
+                          }
                           className="flex items-center gap-1 rounded-lg border px-3 py-2 text-xs font-medium transition hover:bg-muted"
                         >
                           <Play className="size-3.5" />
@@ -399,10 +651,23 @@ function VideosPage() {
 
                         <button
                           type="button"
-                          onClick={() => handleDelete(video.id)}
-                          className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-red-500/10 hover:text-red-500"
+                          onClick={() =>
+                            void handleDelete(
+                              video,
+                            )
+                          }
+                          disabled={
+                            deletingId ===
+                            video.id
+                          }
+                          className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition hover:bg-red-500/10 hover:text-red-500 disabled:opacity-40"
                         >
-                          <Trash2 className="size-4" />
+                          {deletingId ===
+                          video.id ? (
+                            <LoaderCircle className="size-4 animate-spin" />
+                          ) : (
+                            <Trash2 className="size-4" />
+                          )}
                         </button>
                       </div>
                     </td>
@@ -440,31 +705,76 @@ function SceneBadge({
 function StatusBadge({
   status,
 }: {
-  status: VideoItem["status"]
+  status: string
 }) {
-  const style =
-    status === "分析完成"
-      ? "bg-green-500/10 text-green-600"
-      : status === "待分析"
-        ? "bg-amber-500/10 text-amber-600"
-        : "bg-blue-500/10 text-blue-600"
+  const styles: Record<string, string> = {
+    UPLOADED:
+      "bg-blue-500/10 text-blue-600",
+    PENDING:
+      "bg-amber-500/10 text-amber-600",
+    PROCESSING:
+      "bg-purple-500/10 text-purple-600",
+    COMPLETED:
+      "bg-green-500/10 text-green-600",
+    FAILED:
+      "bg-red-500/10 text-red-600",
+  }
+
+  const labels: Record<string, string> = {
+    UPLOADED: "已上传",
+    PENDING: "等待分析",
+    PROCESSING: "分析中",
+    COMPLETED: "分析完成",
+    FAILED: "分析失败",
+  }
 
   return (
     <span
-      className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${style}`}
+      className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${
+        styles[status] ??
+        "bg-muted text-muted-foreground"
+      }`}
     >
-      {status}
+      {labels[status] ?? status}
     </span>
   )
 }
 
 function formatFileSize(bytes: number) {
-  if (bytes === 0) return "0 B"
+  if (!bytes) return "0 B"
 
-  const units = ["B", "KB", "MB", "GB"]
-  const index = Math.floor(
-    Math.log(bytes) / Math.log(1024),
+  const units = [
+    "B",
+    "KB",
+    "MB",
+    "GB",
+    "TB",
+  ]
+
+  const index = Math.min(
+    Math.floor(
+      Math.log(bytes) /
+        Math.log(1024),
+    ),
+    units.length - 1,
   )
 
-  return `${(bytes / 1024 ** index).toFixed(1)} ${units[index]}`
+  return `${(
+    bytes /
+    1024 ** index
+  ).toFixed(1)} ${units[index]}`
+}
+
+function formatDate(
+  value: string | null,
+) {
+  if (!value) return "-"
+
+  const date = new Date(value)
+
+  if (Number.isNaN(date.getTime())) {
+    return value
+  }
+
+  return date.toLocaleString("zh-CN")
 }
