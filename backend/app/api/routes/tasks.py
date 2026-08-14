@@ -9,6 +9,7 @@ from sqlmodel import Session, col, func, select
 from app.api.deps import CurrentUser, SessionDep
 from app.core.db import engine
 from app.models import (
+    AnalysisResult,
     AnalysisTask,
     AnalysisTaskCreate,
     AnalysisTaskPublic,
@@ -24,10 +25,16 @@ router = APIRouter(
 
 def run_fake_analysis(task_id: uuid.UUID) -> None:
     """
-    第一阶段使用模拟分析任务。
+    模拟蜜蜂视频分析。
 
-    后续接入 YOLO、Tracking 等模型时，
-    只需要替换这个函数内部逻辑。
+    当前验证完整业务链：
+    创建任务
+    -> 更新分析进度
+    -> 生成 AnalysisResult
+    -> 完成任务
+
+    后续将该模拟过程替换为真实的
+    YOLO + Tracking + 行为分析模型。
     """
 
     with Session(engine) as session:
@@ -39,15 +46,30 @@ def run_fake_analysis(task_id: uuid.UUID) -> None:
         if not task:
             return
 
+        video = session.get(
+            Video,
+            task.video_id,
+        )
+
         try:
+            # -------------------------
+            # 1. 开始分析
+            # -------------------------
             task.status = "PROCESSING"
             task.progress = 10
             task.started_at = datetime.now(UTC)
 
             session.add(task)
+
+            if video:
+                video.status = "PROCESSING"
+                session.add(video)
+
             session.commit()
 
-            # 模拟模型处理过程
+            # -------------------------
+            # 2. 模拟模型分析过程
+            # -------------------------
             for progress in [
                 25,
                 45,
@@ -70,6 +92,9 @@ def run_fake_analysis(task_id: uuid.UUID) -> None:
                 session.add(task)
                 session.commit()
 
+            # -------------------------
+            # 3. 再次读取任务
+            # -------------------------
             task = session.get(
                 AnalysisTask,
                 task_id,
@@ -78,14 +103,72 @@ def run_fake_analysis(task_id: uuid.UUID) -> None:
             if not task:
                 return
 
+            video = session.get(
+                Video,
+                task.video_id,
+            )
+
+            # -------------------------
+            # 4. 检查是否已经存在结果
+            # -------------------------
+            existing_result = session.exec(
+                select(AnalysisResult).where(
+                    AnalysisResult.task_id
+                    == task.id
+                )
+            ).first()
+
+            # -------------------------
+            # 5. 创建模拟分析结果
+            # -------------------------
+            if not existing_result:
+                result = AnalysisResult(
+                    task_id=task.id,
+                    video_id=task.video_id,
+                    owner_id=task.owner_id,
+
+                    detected_individuals=126,
+                    valid_tracks=84,
+
+                    entry_count=32,
+                    exit_count=29,
+
+                    average_speed=18.6,
+                    activity_index=0.73,
+
+                    abnormal_event_count=2,
+
+                    metrics_json=(
+                        '{"source":"simulation",'
+                        '"model":"baseline-v1",'
+                        '"note":"mock analysis result"}'
+                    ),
+
+                    result_video_path=None,
+                    result_json_path=None,
+                )
+
+                session.add(result)
+
+            # -------------------------
+            # 6. 完成任务
+            # -------------------------
             task.status = "COMPLETED"
             task.progress = 100
             task.completed_at = datetime.now(UTC)
 
             session.add(task)
+
+            if video:
+                video.status = "COMPLETED"
+                session.add(video)
+
             session.commit()
 
         except Exception as exc:
+            # -------------------------
+            # 分析失败
+            # -------------------------
             session.rollback()
 
             task = session.get(
@@ -99,6 +182,16 @@ def run_fake_analysis(task_id: uuid.UUID) -> None:
                 task.completed_at = datetime.now(UTC)
 
                 session.add(task)
+
+                video = session.get(
+                    Video,
+                    task.video_id,
+                )
+
+                if video:
+                    video.status = "FAILED"
+                    session.add(video)
+
                 session.commit()
 
 
@@ -137,7 +230,7 @@ def create_task(
             detail="Not enough permissions",
         )
 
-    # 防止同一个视频同时创建多个正在运行的任务
+    # 防止同一个视频同时创建多个分析任务
     active_statement = (
         select(AnalysisTask)
         .where(
@@ -145,7 +238,7 @@ def create_task(
             == task_in.video_id
         )
         .where(
-            AnalysisTask.status.in_(
+            col(AnalysisTask.status).in_(
                 [
                     "PENDING",
                     "PROCESSING",

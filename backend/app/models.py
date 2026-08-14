@@ -2,7 +2,7 @@ import uuid
 from datetime import UTC, datetime
 
 from pydantic import EmailStr
-from sqlalchemy import DateTime
+from sqlalchemy import DateTime, Text
 from sqlmodel import Field, Relationship, SQLModel
 
 
@@ -267,6 +267,124 @@ class AnalysisTaskPublic(AnalysisTaskBase):
 class AnalysisTasksPublic(SQLModel):
     data: list[AnalysisTaskPublic]
     count: int
+# Shared properties for analysis results
+class AnalysisResultBase(SQLModel):
+    # 检测到的蜜蜂个体数量
+    detected_individuals: int = Field(
+        default=0,
+        ge=0,
+    )
+
+    # 有效连续轨迹数量
+    valid_tracks: int = Field(
+        default=0,
+        ge=0,
+    )
+
+    # 进巢数量
+    entry_count: int = Field(
+        default=0,
+        ge=0,
+    )
+
+    # 出巢数量
+    exit_count: int = Field(
+        default=0,
+        ge=0,
+    )
+
+    # 平均运动速度
+    # 第一阶段可使用 pixel/s，
+    # 后期完成尺度标定后可转换为 mm/s
+    average_speed: float | None = Field(
+        default=None,
+    )
+
+    # 蜂群活动指数
+    activity_index: float | None = Field(
+        default=None,
+    )
+
+    # 检测到的异常事件数量
+    abnormal_event_count: int = Field(
+        default=0,
+        ge=0,
+    )
+
+    # 可扩展指标 JSON
+    # 后期模型增加新指标时，
+    # 不需要每次都立即修改数据库字段
+    metrics_json: str | None = Field(
+        default=None,
+        sa_type=Text,
+    )
+
+
+# Database model
+class AnalysisResult(
+    AnalysisResultBase,
+    table=True,
+):
+    id: uuid.UUID = Field(
+        default_factory=uuid.uuid4,
+        primary_key=True,
+    )
+
+    # 一个 AnalysisTask 对应一个最终结果
+    task_id: uuid.UUID = Field(
+        foreign_key="analysistask.id",
+        nullable=False,
+        unique=True,
+        index=True,
+        ondelete="CASCADE",
+    )
+
+    video_id: uuid.UUID = Field(
+        foreign_key="video.id",
+        nullable=False,
+        index=True,
+        ondelete="CASCADE",
+    )
+
+    owner_id: uuid.UUID = Field(
+        foreign_key="user.id",
+        nullable=False,
+        index=True,
+        ondelete="CASCADE",
+    )
+
+    # 后续模型生成的标注视频
+    result_video_path: str | None = Field(
+        default=None,
+        max_length=1024,
+    )
+
+    # 后续保存轨迹、逐帧结果等 JSON
+    result_json_path: str | None = Field(
+        default=None,
+        max_length=1024,
+    )
+
+    created_at: datetime | None = Field(
+        default_factory=get_datetime_utc,
+        sa_type=DateTime(timezone=True),  # type: ignore
+    )
+
+
+# Properties returned by the API
+class AnalysisResultPublic(
+    AnalysisResultBase,
+):
+    id: uuid.UUID
+    task_id: uuid.UUID
+    video_id: uuid.UUID
+    owner_id: uuid.UUID
+    created_at: datetime | None = None
+
+
+class AnalysisResultsPublic(SQLModel):
+    data: list[AnalysisResultPublic]
+    count: int 
 # JSON payload containing access token
 class Token(SQLModel):
     access_token: str
