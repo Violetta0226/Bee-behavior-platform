@@ -406,123 +406,127 @@ function TasksPage() {
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b bg-muted/30 text-left">
-                  <th className="px-6 py-4 font-medium">
-                    视频
-                  </th>
+             <thead>
+  <tr className="border-b bg-muted/30 text-left">
+    <th className="px-6 py-4 font-medium">
+      视频
+    </th>
 
-                  <th className="px-6 py-4 font-medium">
-                    模型
-                  </th>
+    <th className="px-6 py-4 font-medium">
+      模型
+    </th>
 
-                  <th className="px-6 py-4 font-medium">
-                    状态
-                  </th>
+    <th className="px-6 py-4 font-medium">
+      状态
+    </th>
 
-                  <th className="min-w-52 px-6 py-4 font-medium">
-                    分析进度
-                  </th>
+    <th className="min-w-52 px-6 py-4 font-medium">
+      分析进度
+    </th>
 
-                  <th className="px-6 py-4 font-medium">
-                    创建时间
-                  </th>
+    <th className="px-6 py-4 font-medium">
+      创建时间
+    </th>
 
-                  <th className="px-6 py-4 font-medium">
-                    完成时间
-                  </th>
-                </tr>
-              </thead>
+    <th className="px-6 py-4 font-medium">
+      完成时间
+    </th>
 
-              <tbody>
-                {tasks.map((task) => (
-                  <tr
-                    key={task.id}
-                    className="border-b last:border-0"
-                  >
-                    {/* 视频 */}
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted">
-                          <FileVideo className="size-4" />
-                        </div>
+    <th className="px-6 py-4 text-right font-medium">
+      操作
+    </th>
+  </tr>
+</thead>
 
-                        <div className="min-w-0">
-                          <p className="max-w-64 truncate font-medium">
-                            {videoNameMap.get(
-                              task.video_id,
-                            ) ??
-                              "未知视频"}
-                          </p>
-
-                          <p className="mt-1 font-mono text-xs text-muted-foreground">
-                            {shortId(
-                              task.video_id,
-                            )}
-                          </p>
-                        </div>
-                      </div>
-                    </td>
-
-                    {/* 模型 */}
-                    <td className="px-6 py-4">
-                      <span className="font-mono text-xs">
-                        {task.model_name ??
-                          "-"}
-                      </span>
-                    </td>
-
-                    {/* 状态 */}
-                    <td className="px-6 py-4">
-                      <TaskStatusBadge
-                        status={task.status}
-                      />
-                    </td>
-
-                    {/* 进度 */}
-                    <td className="px-6 py-4">
-                      <ProgressBar
-                        progress={
-                          task.progress
-                        }
-                        status={
-                          task.status
-                        }
-                      />
-                    </td>
-
-                    {/* 创建时间 */}
-                    <td className="px-6 py-4 text-muted-foreground">
-                      {formatDate(
-                        task.created_at,
-                      )}
-                    </td>
-
-                    {/* 完成时间 */}
-                    <td className="px-6 py-4 text-muted-foreground">
-                      {formatDate(
-                        task.completed_at,
-                      )}
-
-                      {task.error_message && (
-                        <p className="mt-1 max-w-52 truncate text-xs text-red-500">
-                          {
-                            task.error_message
-                          }
-                        </p>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+             <tbody>
+  {tasks.map((task) => (
+    <tr
+      key={task.id}
+      className="border-b last:border-0"
+    >
+      {/* 视频 */}
+      <td className="px-6 py-4">
+        <div className="flex items-center gap-3">
+          <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted">
+            <FileVideo className="size-4" />
           </div>
-        )}
-      </div>
-    </div>
-  )
-}
 
+          <div className="min-w-0">
+            <p className="max-w-64 truncate font-medium">
+              {videoNameMap.get(task.video_id) ??
+                "未知视频"}
+            </p>
+
+            <p className="mt-1 font-mono text-xs text-muted-foreground">
+              {shortId(task.video_id)}
+            </p>
+          </div>
+        </div>
+      </td>
+
+      {/* 模型 */}
+      <td className="px-6 py-4">
+        <span className="font-mono text-xs">
+          {task.model_name ?? "-"}
+        </span>
+      </td>
+
+      {/* 状态 */}
+      <td className="px-6 py-4">
+        <TaskStatusBadge
+          status={task.status}
+        />
+      </td>
+
+      {/* 分析进度 */}
+      <td className="px-6 py-4">
+        <ProgressBar
+          progress={task.progress}
+          status={task.status}
+        />
+      </td>
+
+      {/* 创建时间 */}
+      <td className="px-6 py-4 text-muted-foreground">
+        {formatDate(task.created_at)}
+      </td>
+
+      {/* 完成时间 */}
+      <td className="px-6 py-4 text-muted-foreground">
+        {formatDate(task.completed_at)}
+
+        {task.error_message && (
+          <p className="mt-1 max-w-52 truncate text-xs text-red-500">
+            {task.error_message}
+          </p>
+        )}
+      </td>
+
+      {/* 操作 */}
+      <td className="px-6 py-4 text-right">
+        {task.status === "COMPLETED" ? (
+          <a
+            href={`/results?task_id=${task.id}`}
+            className="inline-flex whitespace-nowrap rounded-lg border px-3 py-2 text-xs font-medium transition hover:bg-muted"
+          >
+            查看结果
+          </a>
+        ) : (
+          <span className="text-xs text-muted-foreground">
+            -
+          </span>
+        )}
+      </td>
+    </tr>
+  ))}
+</tbody>
+</table>
+</div>
+)}
+</div>
+</div>
+)
+}
 function SummaryCard({
   title,
   value,

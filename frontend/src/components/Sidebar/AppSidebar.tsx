@@ -1,5 +1,5 @@
 import {
-  Activity,
+  BarChart3,
   BrainCircuit,
   LayoutDashboard,
   ListTodo,
@@ -42,12 +42,17 @@ const baseItems: Item[] = [
     path: "/tasks",
   },
   {
+    icon: BarChart3,
+    title: "分析结果",
+    path: "/results",
+  },
+  {
     icon: ScanSearch,
     title: "个体追踪",
     path: "/tracking",
   },
   {
-    icon: Activity,
+    icon: Users,
     title: "群体行为",
     path: "/behavior",
   },
