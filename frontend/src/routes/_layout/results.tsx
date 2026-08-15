@@ -17,7 +17,6 @@ import {
   useEffect,
   useMemo,
   useState,
-  type ReactNode,
 } from "react"
 
 export const Route = createFileRoute("/_layout/results")({
@@ -114,20 +113,18 @@ function getAuthHeaders(): HeadersInit {
   }
 }
 
-function ResultsPage() {
-    const requestedTaskId =
-  new URLSearchParams(
-    window.location.search,
-  ).get("task_id")
-    const requestedTaskId =
-  new URLSearchParams(window.location.search).get(
-    "task_id",
-  )
+
+ function ResultsPage() {
+  const requestedTaskId =
+    new URLSearchParams(
+      window.location.search,
+    ).get("task_id")
+
   const [results, setResults] =
     useState<AnalysisResultItem[]>([])
 
   const [videos, setVideos] =
-    useState<VideoItem[]>([])
+    useState<VideoItem[]>([]) 
 
   const [tasks, setTasks] =
     useState<AnalysisTaskItem[]>([])
