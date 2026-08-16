@@ -4,6 +4,7 @@ import {
   FileVideo,
   LoaderCircle,
   RefreshCw,
+  RotateCcw,
   TriangleAlert,
 } from "lucide-react"
 import {
@@ -100,7 +101,8 @@ function TasksPage() {
 
   const [isRefreshing, setIsRefreshing] =
     useState(false)
-
+const [reanalyzingId, setReanalyzingId] =
+  useState<string | null>(null)
   const [
     errorMessage,
     setErrorMessage,
@@ -196,6 +198,66 @@ function TasksPage() {
    * 页面进入时立即读取一次。
    * 此后每 2 秒静默刷新。
    */
+  const handleReanalyze = async (
+  task: AnalysisTaskItem,
+) => {
+  const confirmed = window.confirm(
+    "确定重新分析该视频吗？系统将创建一个新的分析任务。",
+  )
+
+  if (!confirmed) {
+    return
+  }
+
+  setReanalyzingId(task.id)
+  setErrorMessage(null)
+
+  try {
+    const response = await fetch(
+      `${API_BASE}/tasks/`,
+      {
+        method: "POST",
+        headers: {
+          ...getAuthHeaders(),
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          video_id: task.video_id,
+          model_name:
+            task.model_name ??
+            "baseline-v1",
+        }),
+      },
+    )
+
+    if (!response.ok) {
+      const errorBody = await response
+        .json()
+        .catch(() => null)
+
+      throw new Error(
+        errorBody?.detail ??
+          `重新分析失败：${response.status}`,
+      )
+    }
+
+    await response.json()
+
+    // 创建成功后立即刷新任务列表
+    await loadData("manual")
+  } catch (error) {
+    console.error(error)
+
+    setErrorMessage(
+      error instanceof Error
+        ? error.message
+        : "重新分析失败",
+    )
+  } finally {
+    setReanalyzingId(null)
+  }
+}
+
   useEffect(() => {
     void loadData("initial")
 
@@ -428,13 +490,17 @@ function TasksPage() {
       创建时间
     </th>
 
-    <th className="px-6 py-4 font-medium">
-      完成时间
-    </th>
+   <th className="px-6 py-4 font-medium">
+  完成时间
+</th>
 
-    <th className="px-6 py-4 text-right font-medium">
-      操作
-    </th>
+<th className="px-6 py-4 font-medium">
+  分析耗时
+</th>
+
+<th className="px-6 py-4 text-right font-medium">
+  操作
+</th>
   </tr>
 </thead>
 
@@ -501,22 +567,61 @@ function TasksPage() {
           </p>
         )}
       </td>
+      {/* 分析耗时 */}
+<td className="px-6 py-4 text-muted-foreground">
+  {formatDuration(
+    task.started_at,
+    task.completed_at,
+    task.status,
+  )}
+</td>
 
-      {/* 操作 */}
-      <td className="px-6 py-4 text-right">
-        {task.status === "COMPLETED" ? (
-          <a
-            href={`/results?task_id=${task.id}`}
-            className="inline-flex whitespace-nowrap rounded-lg border px-3 py-2 text-xs font-medium transition hover:bg-muted"
-          >
-            查看结果
-          </a>
+     {/* 操作 */}
+<td className="px-6 py-4">
+  <div className="flex items-center justify-end gap-2">
+    {task.status === "COMPLETED" && (
+      <a
+        href={`/results?task_id=${task.id}`}
+        className="inline-flex whitespace-nowrap rounded-lg border px-3 py-2 text-xs font-medium transition hover:bg-muted"
+      >
+        查看结果
+      </a>
+    )}
+
+    {(task.status === "COMPLETED" ||
+      task.status === "FAILED") && (
+      <button
+        type="button"
+        onClick={() =>
+          void handleReanalyze(task)
+        }
+        disabled={
+          reanalyzingId === task.id
+        }
+        className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg border px-3 py-2 text-xs font-medium transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {reanalyzingId === task.id ? (
+          <>
+            <LoaderCircle className="size-3.5 animate-spin" />
+            创建中
+          </>
         ) : (
-          <span className="text-xs text-muted-foreground">
-            -
-          </span>
+          <>
+            <RotateCcw className="size-3.5" />
+            重新分析
+          </>
         )}
-      </td>
+      </button>
+    )}
+
+    {task.status !== "COMPLETED" &&
+      task.status !== "FAILED" && (
+        <span className="text-xs text-muted-foreground">
+          任务执行中
+        </span>
+      )}
+  </div>
+</td>
     </tr>
   ))}
 </tbody>
@@ -679,4 +784,72 @@ function formatDate(
   return date.toLocaleString(
     "zh-CN",
   )
+}
+function formatDuration(
+  startedAt: string | null,
+  completedAt: string | null,
+  status: string,
+) {
+  if (!startedAt) {
+    return "-"
+  }
+
+  const start =
+    new Date(startedAt).getTime()
+
+  let end: number
+
+  if (completedAt) {
+    end =
+      new Date(
+        completedAt,
+      ).getTime()
+  } else if (
+    status === "PROCESSING"
+  ) {
+    end = Date.now()
+  } else {
+    return "-"
+  }
+
+  if (
+    Number.isNaN(start) ||
+    Number.isNaN(end)
+  ) {
+    return "-"
+  }
+
+  const totalSeconds =
+    Math.max(
+      0,
+      Math.round(
+        (end - start) / 1000,
+      ),
+    )
+
+  if (totalSeconds < 60) {
+    return `${totalSeconds} 秒`
+  }
+
+  const minutes =
+    Math.floor(
+      totalSeconds / 60,
+    )
+
+  const seconds =
+    totalSeconds % 60
+
+  if (minutes < 60) {
+    return `${minutes} 分 ${seconds} 秒`
+  }
+
+  const hours =
+    Math.floor(
+      minutes / 60,
+    )
+
+  const remainingMinutes =
+    minutes % 60
+
+  return `${hours} 小时 ${remainingMinutes} 分`
 }
