@@ -5,6 +5,7 @@ import {
   LoaderCircle,
   RefreshCw,
   RotateCcw,
+  Trash2,
   TriangleAlert,
 } from "lucide-react"
 import {
@@ -103,6 +104,8 @@ function TasksPage() {
     useState(false)
 const [reanalyzingId, setReanalyzingId] =
   useState<string | null>(null)
+  const [deletingId, setDeletingId] =
+  useState<string | null>(null)
   const [
     errorMessage,
     setErrorMessage,
@@ -198,7 +201,7 @@ const [reanalyzingId, setReanalyzingId] =
    * 页面进入时立即读取一次。
    * 此后每 2 秒静默刷新。
    */
-  const handleReanalyze = async (
+ const handleReanalyze = async (
   task: AnalysisTaskItem,
 ) => {
   const confirmed = window.confirm(
@@ -243,7 +246,6 @@ const [reanalyzingId, setReanalyzingId] =
 
     await response.json()
 
-    // 创建成功后立即刷新任务列表
     await loadData("manual")
   } catch (error) {
     console.error(error)
@@ -258,6 +260,63 @@ const [reanalyzingId, setReanalyzingId] =
   }
 }
 
+const handleDeleteTask = async (
+  task: AnalysisTaskItem,
+) => {
+  if (
+    task.status === "PENDING" ||
+    task.status === "PROCESSING"
+  ) {
+    setErrorMessage(
+      "正在执行的分析任务不能删除",
+    )
+    return
+  }
+
+  const confirmed = window.confirm(
+    "确定删除该分析任务吗？关联的分析结果也会一并删除，此操作不可恢复。",
+  )
+
+  if (!confirmed) {
+    return
+  }
+
+  setDeletingId(task.id)
+  setErrorMessage(null)
+
+  try {
+    const response = await fetch(
+      `${API_BASE}/tasks/${task.id}`,
+      {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+      },
+    )
+
+    if (!response.ok) {
+      const errorBody = await response
+        .json()
+        .catch(() => null)
+
+      throw new Error(
+        errorBody?.detail ??
+          `删除任务失败：${response.status}`,
+      )
+    }
+
+    await loadData("manual")
+  } catch (error) {
+    console.error(error)
+
+    setErrorMessage(
+      error instanceof Error
+        ? error.message
+        : "删除分析任务失败",
+    )
+  } finally {
+    setDeletingId(null)
+  }
+}
   useEffect(() => {
     void loadData("initial")
 
@@ -613,7 +672,31 @@ const [reanalyzingId, setReanalyzingId] =
         )}
       </button>
     )}
-
+{(task.status === "COMPLETED" ||
+  task.status === "FAILED") && (
+  <button
+    type="button"
+    onClick={() =>
+      void handleDeleteTask(task)
+    }
+    disabled={
+      deletingId === task.id
+    }
+    className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-lg border border-red-500/20 px-3 py-2 text-xs font-medium text-red-500 transition hover:bg-red-500/10 disabled:cursor-not-allowed disabled:opacity-50"
+  >
+    {deletingId === task.id ? (
+      <>
+        <LoaderCircle className="size-3.5 animate-spin" />
+        删除中
+      </>
+    ) : (
+      <>
+        <Trash2 className="size-3.5" />
+        删除
+      </>
+    )}
+  </button>
+)}
     {task.status !== "COMPLETED" &&
       task.status !== "FAILED" && (
         <span className="text-xs text-muted-foreground">
