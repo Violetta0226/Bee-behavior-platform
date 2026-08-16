@@ -637,6 +637,12 @@ const handleDeleteTask = async (
 
      {/* 操作 */}
 <td className="px-6 py-4">
+  <a
+  href={`/tasks/${task.id}`}
+  className="inline-flex whitespace-nowrap rounded-lg border px-3 py-2 text-xs font-medium transition hover:bg-muted"
+>
+  任务详情
+</a>
   <div className="flex items-center justify-end gap-2">
     {task.status === "COMPLETED" && (
       <a

@@ -21,6 +21,7 @@ import { Route as LayoutResultsRouteImport } from './routes/_layout/results'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
 import { Route as LayoutTasksRouteImport } from './routes/_layout/tasks'
 import { Route as LayoutVideosRouteImport } from './routes/_layout/videos'
+import { Route as LayoutTasksTaskIdRouteImport } from './routes/_layout/tasks_.$taskId'
 import { Route as LayoutVideosVideoIdRouteImport } from './routes/_layout/videos.$videoId'
 
 const LayoutRoute = LayoutRouteImport.update({
@@ -82,6 +83,11 @@ const LayoutVideosRoute = LayoutVideosRouteImport.update({
   path: '/videos',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutTasksTaskIdRoute = LayoutTasksTaskIdRouteImport.update({
+  id: '/tasks_/$taskId',
+  path: '/tasks/$taskId',
+  getParentRoute: () => LayoutRoute,
+} as any)
 const LayoutVideosVideoIdRoute = LayoutVideosVideoIdRouteImport.update({
   id: '/$videoId',
   path: '/$videoId',
@@ -100,6 +106,7 @@ export interface FileRoutesByFullPath {
   '/settings': typeof LayoutSettingsRoute
   '/tasks': typeof LayoutTasksRoute
   '/videos': typeof LayoutVideosRouteWithChildren
+  '/tasks/$taskId': typeof LayoutTasksTaskIdRoute
   '/videos/$videoId': typeof LayoutVideosVideoIdRoute
 }
 export interface FileRoutesByTo {
@@ -114,6 +121,7 @@ export interface FileRoutesByTo {
   '/tasks': typeof LayoutTasksRoute
   '/videos': typeof LayoutVideosRouteWithChildren
   '/': typeof LayoutIndexRoute
+  '/tasks/$taskId': typeof LayoutTasksTaskIdRoute
   '/videos/$videoId': typeof LayoutVideosVideoIdRoute
 }
 export interface FileRoutesById {
@@ -130,6 +138,7 @@ export interface FileRoutesById {
   '/_layout/tasks': typeof LayoutTasksRoute
   '/_layout/videos': typeof LayoutVideosRouteWithChildren
   '/_layout/': typeof LayoutIndexRoute
+  '/_layout/tasks_/$taskId': typeof LayoutTasksTaskIdRoute
   '/_layout/videos/$videoId': typeof LayoutVideosVideoIdRoute
 }
 export interface FileRouteTypes {
@@ -146,6 +155,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/tasks'
     | '/videos'
+    | '/tasks/$taskId'
     | '/videos/$videoId'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -160,6 +170,7 @@ export interface FileRouteTypes {
     | '/tasks'
     | '/videos'
     | '/'
+    | '/tasks/$taskId'
     | '/videos/$videoId'
   id:
     | '__root__'
@@ -175,6 +186,7 @@ export interface FileRouteTypes {
     | '/_layout/tasks'
     | '/_layout/videos'
     | '/_layout/'
+    | '/_layout/tasks_/$taskId'
     | '/_layout/videos/$videoId'
   fileRoutesById: FileRoutesById
 }
@@ -272,6 +284,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutVideosRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/tasks_/$taskId': {
+      id: '/_layout/tasks_/$taskId'
+      path: '/tasks/$taskId'
+      fullPath: '/tasks/$taskId'
+      preLoaderRoute: typeof LayoutTasksTaskIdRouteImport
+      parentRoute: typeof LayoutRoute
+    }
     '/_layout/videos/$videoId': {
       id: '/_layout/videos/$videoId'
       path: '/$videoId'
@@ -302,6 +321,7 @@ interface LayoutRouteChildren {
   LayoutTasksRoute: typeof LayoutTasksRoute
   LayoutVideosRoute: typeof LayoutVideosRouteWithChildren
   LayoutIndexRoute: typeof LayoutIndexRoute
+  LayoutTasksTaskIdRoute: typeof LayoutTasksTaskIdRoute
 }
 
 const LayoutRouteChildren: LayoutRouteChildren = {
@@ -312,6 +332,7 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutTasksRoute: LayoutTasksRoute,
   LayoutVideosRoute: LayoutVideosRouteWithChildren,
   LayoutIndexRoute: LayoutIndexRoute,
+  LayoutTasksTaskIdRoute: LayoutTasksTaskIdRoute,
 }
 
 const LayoutRouteWithChildren =
