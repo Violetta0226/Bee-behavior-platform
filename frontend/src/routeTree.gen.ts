@@ -21,6 +21,7 @@ import { Route as LayoutResultsRouteImport } from './routes/_layout/results'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
 import { Route as LayoutTasksRouteImport } from './routes/_layout/tasks'
 import { Route as LayoutVideosRouteImport } from './routes/_layout/videos'
+import { Route as LayoutVideosVideoIdRouteImport } from './routes/_layout/videos.$videoId'
 
 const LayoutRoute = LayoutRouteImport.update({
   id: '/_layout',
@@ -81,6 +82,11 @@ const LayoutVideosRoute = LayoutVideosRouteImport.update({
   path: '/videos',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutVideosVideoIdRoute = LayoutVideosVideoIdRouteImport.update({
+  id: '/$videoId',
+  path: '/$videoId',
+  getParentRoute: () => LayoutVideosRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof LayoutIndexRoute
@@ -93,7 +99,8 @@ export interface FileRoutesByFullPath {
   '/results': typeof LayoutResultsRoute
   '/settings': typeof LayoutSettingsRoute
   '/tasks': typeof LayoutTasksRoute
-  '/videos': typeof LayoutVideosRoute
+  '/videos': typeof LayoutVideosRouteWithChildren
+  '/videos/$videoId': typeof LayoutVideosVideoIdRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof LoginRoute
@@ -105,8 +112,9 @@ export interface FileRoutesByTo {
   '/results': typeof LayoutResultsRoute
   '/settings': typeof LayoutSettingsRoute
   '/tasks': typeof LayoutTasksRoute
-  '/videos': typeof LayoutVideosRoute
+  '/videos': typeof LayoutVideosRouteWithChildren
   '/': typeof LayoutIndexRoute
+  '/videos/$videoId': typeof LayoutVideosVideoIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -120,8 +128,9 @@ export interface FileRoutesById {
   '/_layout/results': typeof LayoutResultsRoute
   '/_layout/settings': typeof LayoutSettingsRoute
   '/_layout/tasks': typeof LayoutTasksRoute
-  '/_layout/videos': typeof LayoutVideosRoute
+  '/_layout/videos': typeof LayoutVideosRouteWithChildren
   '/_layout/': typeof LayoutIndexRoute
+  '/_layout/videos/$videoId': typeof LayoutVideosVideoIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -137,6 +146,7 @@ export interface FileRouteTypes {
     | '/settings'
     | '/tasks'
     | '/videos'
+    | '/videos/$videoId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
@@ -150,6 +160,7 @@ export interface FileRouteTypes {
     | '/tasks'
     | '/videos'
     | '/'
+    | '/videos/$videoId'
   id:
     | '__root__'
     | '/_layout'
@@ -164,6 +175,7 @@ export interface FileRouteTypes {
     | '/_layout/tasks'
     | '/_layout/videos'
     | '/_layout/'
+    | '/_layout/videos/$videoId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -260,8 +272,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutVideosRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/videos/$videoId': {
+      id: '/_layout/videos/$videoId'
+      path: '/$videoId'
+      fullPath: '/videos/$videoId'
+      preLoaderRoute: typeof LayoutVideosVideoIdRouteImport
+      parentRoute: typeof LayoutVideosRoute
+    }
   }
 }
+
+interface LayoutVideosRouteChildren {
+  LayoutVideosVideoIdRoute: typeof LayoutVideosVideoIdRoute
+}
+
+const LayoutVideosRouteChildren: LayoutVideosRouteChildren = {
+  LayoutVideosVideoIdRoute: LayoutVideosVideoIdRoute,
+}
+
+const LayoutVideosRouteWithChildren = LayoutVideosRoute._addFileChildren(
+  LayoutVideosRouteChildren,
+)
 
 interface LayoutRouteChildren {
   LayoutAdminRoute: typeof LayoutAdminRoute
@@ -269,7 +300,7 @@ interface LayoutRouteChildren {
   LayoutResultsRoute: typeof LayoutResultsRoute
   LayoutSettingsRoute: typeof LayoutSettingsRoute
   LayoutTasksRoute: typeof LayoutTasksRoute
-  LayoutVideosRoute: typeof LayoutVideosRoute
+  LayoutVideosRoute: typeof LayoutVideosRouteWithChildren
   LayoutIndexRoute: typeof LayoutIndexRoute
 }
 
@@ -279,7 +310,7 @@ const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutResultsRoute: LayoutResultsRoute,
   LayoutSettingsRoute: LayoutSettingsRoute,
   LayoutTasksRoute: LayoutTasksRoute,
-  LayoutVideosRoute: LayoutVideosRoute,
+  LayoutVideosRoute: LayoutVideosRouteWithChildren,
   LayoutIndexRoute: LayoutIndexRoute,
 }
 

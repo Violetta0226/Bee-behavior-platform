@@ -4,7 +4,7 @@ from typing import Any
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from sqlmodel import col, func, select
-
+from fastapi.responses import FileResponse
 from app.api.deps import CurrentUser, SessionDep
 from app.models import Message, Video, VideoPublic, VideosPublic
 
@@ -168,7 +168,94 @@ async def upload_video(
         raise
 
     return video
+@router.get(
+    "/{video_id}",
+    response_model=VideoPublic,
+)
+def read_video(
+    *,
+    session: SessionDep,
+    current_user: CurrentUser,
+    video_id: uuid.UUID,
+) -> Any:
+    """
+    获取单个视频详情。
+    """
 
+    video = session.get(
+        Video,
+        video_id,
+    )
+
+    if not video:
+        raise HTTPException(
+            status_code=404,
+            detail="Video not found",
+        )
+
+    if (
+        not current_user.is_superuser
+        and video.owner_id != current_user.id
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="Not enough permissions",
+        )
+
+    return video
+
+
+@router.get(
+    "/{video_id}/file",
+    response_class=FileResponse,
+)
+def read_video_file(
+    *,
+    session: SessionDep,
+    current_user: CurrentUser,
+    video_id: uuid.UUID,
+) -> FileResponse:
+    """
+    返回原始视频文件。
+    """
+
+    video = session.get(
+        Video,
+        video_id,
+    )
+
+    if not video:
+        raise HTTPException(
+            status_code=404,
+            detail="Video not found",
+        )
+
+    if (
+        not current_user.is_superuser
+        and video.owner_id != current_user.id
+    ):
+        raise HTTPException(
+            status_code=403,
+            detail="Not enough permissions",
+        )
+
+    file_path = Path(
+        video.file_path
+    )
+
+    if not file_path.is_file():
+        raise HTTPException(
+            status_code=404,
+            detail="Video file not found",
+        )
+
+    return FileResponse(
+        path=file_path,
+        media_type=(
+            video.content_type
+            or "application/octet-stream"
+        ),
+    )
 
 @router.delete("/{video_id}")
 def delete_video(

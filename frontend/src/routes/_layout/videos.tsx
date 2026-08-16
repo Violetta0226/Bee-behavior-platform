@@ -632,9 +632,20 @@ function VideosPage() {
                           <FileVideo className="size-4" />
                         </div>
 
-                        <span className="max-w-72 truncate font-medium">
-                          {video.original_filename}
-                        </span>
+                       <button
+  type="button"
+  onClick={() =>
+    void navigate({
+      to: "/videos/$videoId",
+      params: {
+        videoId: video.id,
+      },
+    })
+  }
+  className="max-w-72 truncate text-left font-medium transition hover:text-amber-600 hover:underline"
+>
+  {video.original_filename}
+</button>
                       </div>
                     </td>
 
