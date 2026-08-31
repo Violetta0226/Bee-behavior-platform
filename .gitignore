@@ -1,5 +1,22 @@
 .vscode/*
 !.vscode/extensions.json
+
+# Local secrets and environment overrides
+.env
+.env.*
+!.env.example
+
+# Local virtual environments
+.venv/
+venv/
+
+# Logs and generated caches
+*.log
+.cache/
+cache/
+__pycache__/
+*.py[cod]
+
 node_modules/
 backend/app/frontend/
 /test-results/
