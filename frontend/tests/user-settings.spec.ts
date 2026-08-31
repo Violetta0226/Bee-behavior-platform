@@ -6,6 +6,15 @@ import { logInUser, logOutUser } from "./utils/user"
 
 const tabs = ["My profile", "Password", "Danger zone"]
 
+async function expandSidebarForInteraction(
+  page: import("@playwright/test").Page,
+) {
+  const toggle = page.getByRole("button", { name: /展开导航|收起导航/ })
+  if ((await toggle.getAttribute("aria-expanded")) !== "true") {
+    await toggle.click()
+  }
+}
+
 test("My profile tab is active by default", async ({ page }) => {
   await page.goto("/settings")
   await expect(page.getByRole("tab", { name: "My profile" })).toHaveAttribute(
@@ -209,6 +218,7 @@ test("Appearance button is visible in sidebar", async ({ page }) => {
 
 test("User can switch between theme modes", async ({ page }) => {
   await page.goto("/settings")
+  await expandSidebarForInteraction(page)
 
   await page.getByTestId("theme-button").click()
   await page.getByTestId("dark-mode").click()
@@ -223,6 +233,7 @@ test("User can switch between theme modes", async ({ page }) => {
 
 test("Selected mode is preserved across sessions", async ({ page }) => {
   await page.goto("/settings")
+  await expandSidebarForInteraction(page)
 
   await page.getByTestId("theme-button").click()
   if (

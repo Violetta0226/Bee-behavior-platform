@@ -1,0 +1,128 @@
+{
+  "baseline": {
+    "results": {
+      "evidenceHeight": 148.046875,
+      "coreHeight": 157.625,
+      "signatureY": 548.734375
+    },
+    "videos": {
+      "headerBottomToObservation": 236.640625,
+      "firstObservationY": 437.609375
+    },
+    "tasks": {
+      "recordHeight": 124
+    }
+  },
+  "final": {
+    "results": {
+      "header": {
+        "x": 106.03125,
+        "y": 54.390625,
+        "width": 1748.171875,
+        "height": 126.671875
+      },
+      "evidence": {
+        "x": 262.5,
+        "y": 185.0625,
+        "width": 1596.53125,
+        "height": 72.765625
+      },
+      "core": {
+        "x": 810.96875,
+        "y": 273.8125,
+        "width": 1025.6875,
+        "height": 95.265625
+      },
+      "signature": {
+        "x": 285.328125,
+        "y": 426.65625,
+        "width": 1157.09375,
+        "height": 661.0625
+      },
+      "signatureGeometry": {
+        "x": 479.640625,
+        "y": 518.21875,
+        "width": 768.453125,
+        "height": 352
+      }
+    },
+    "videos": {
+      "header": {
+        "x": 262.9375,
+        "y": 56.64691162109375,
+        "width": 1596.109375,
+        "height": 131.375
+      },
+      "commandRail": {
+        "x": 262.9375,
+        "y": 191.32534790039062,
+        "width": 1596.109375,
+        "height": 104.25
+      },
+      "commandSummary": {
+        "x": 262.9375,
+        "y": 191.32534790039062,
+        "width": 1596.109375,
+        "height": 46.390625
+      },
+      "firstObservation": {
+        "x": 262.9375,
+        "y": 382.70562744140625,
+        "width": 1596.109375,
+        "height": 419.234375
+      }
+    },
+    "tasks": {
+      "records": [
+        {
+          "y": 535.2101440429688,
+          "width": 1596.109375,
+          "height": 124
+        },
+        {
+          "y": 659.2101440429688,
+          "width": 1596.109375,
+          "height": 124
+        },
+        {
+          "y": 783.2101440429688,
+          "width": 1596.109375,
+          "height": 124
+        }
+      ]
+    },
+    "taskDetail": {
+      "process": {
+        "x": 262.9375,
+        "y": 200.515625,
+        "width": 1596.109375,
+        "height": 244.625
+      },
+      "readings": {
+        "x": 262.9375,
+        "y": 540.114013671875,
+        "width": 1596.109375,
+        "height": 156.375
+      },
+      "resultRail": {
+        "x": 262.9375,
+        "y": 782.1676635742188,
+        "width": 1596.109375,
+        "height": 83.078125
+      },
+      "observationRail": {
+        "x": 262.9375,
+        "y": 865.2457885742188,
+        "width": 1596.109375,
+        "height": 83.078125
+      }
+    }
+  },
+  "delta": {
+    "evidenceHeight": -75.28125,
+    "coreHeight": -62.359375,
+    "signatureY": -122.078125,
+    "headerBottomToObservation": -41.9569091796875,
+    "firstObservationY": -54.90374755859375
+  }
+}

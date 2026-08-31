@@ -21,14 +21,23 @@ export async function logInUser(page: Page, email: string, password: string) {
 
   await page.getByTestId("email-input").fill(email)
   await page.getByTestId("password-input").fill(password)
-  await page.getByRole("button", { name: "Log In" }).click()
+  await page.getByRole("button", { name: "登录" }).click()
   await page.waitForURL("/")
-  await expect(
-    page.getByText("Welcome back, nice to see you again!"),
-  ).toBeVisible()
+  expect(
+    await page.evaluate(() => localStorage.getItem("access_token")),
+  ).toBeTruthy()
 }
 
 export async function logOutUser(page: Page) {
+  const sidebarToggle = page.getByRole("button", {
+    name: /展开导航|收起导航/,
+  })
+  if (
+    (await sidebarToggle.count()) > 0 &&
+    (await sidebarToggle.getAttribute("aria-expanded")) !== "true"
+  ) {
+    await sidebarToggle.click()
+  }
   await page.getByTestId("user-menu").click()
   await page.getByRole("menuitem", { name: "Log out" }).click()
   await page.goto("/login")

@@ -1,0 +1,121 @@
+{
+  "viewport": {
+    "width": 1914,
+    "height": 960
+  },
+  "scrollY": 0,
+  "results": {
+    "entry": {
+      "x": 317.453125,
+      "y": 685,
+      "width": 138.6875,
+      "height": 48,
+      "bottom": 733
+    },
+    "gate": {
+      "x": 847.915771484375,
+      "y": 552.674560546875,
+      "width": 34.98095703125,
+      "height": 28.070068359375,
+      "bottom": 580.74462890625
+    },
+    "exit": {
+      "x": 1274.671875,
+      "y": 685,
+      "width": 138.6875,
+      "height": 48,
+      "bottom": 733
+    },
+    "mainFlows": [
+      {
+        "x": 495.85540771484375,
+        "y": 600.8101806640625,
+        "width": 357.8914794921875,
+        "height": 82.22210693359375,
+        "bottom": 683.0322875976562
+      },
+      {
+        "x": 879.0933227539062,
+        "y": 717.33740234375,
+        "width": 355.86370849609375,
+        "height": 79.05084228515625,
+        "bottom": 796.3882446289062
+      }
+    ],
+    "evidenceHeight": 72.765625,
+    "coreHeight": 95.265625
+  },
+  "videos": {
+    "display": "flex",
+    "height": 46.390625,
+    "largeKpiCount": 0,
+    "values": [
+      {
+        "text": "1",
+        "fontSize": "18px"
+      },
+      {
+        "text": "1",
+        "fontSize": "18px"
+      },
+      {
+        "text": "0",
+        "fontSize": "18px"
+      },
+      {
+        "text": "0",
+        "fontSize": "18px"
+      },
+      {
+        "text": "1",
+        "fontSize": "18px"
+      }
+    ]
+  },
+  "tasks": {
+    "nodes": [
+      {
+        "className": "process-track-node is-origin",
+        "role": "create-origin",
+        "x": 650.875,
+        "width": 12,
+        "height": 12,
+        "borderRadius": "50%",
+        "transform": "none",
+        "innerMarker": "autoxauto"
+      },
+      {
+        "className": "process-track-node is-analysis",
+        "role": "analysis-node",
+        "x": 976.078125,
+        "width": 10,
+        "height": 10,
+        "borderRadius": "50%",
+        "transform": "none",
+        "innerMarker": "4pxx4px"
+      },
+      {
+        "className": "process-track-node is-evidence",
+        "role": "result-endpoint",
+        "x": 1463.053955078125,
+        "width": 14.14208984375,
+        "height": 14.14208984375,
+        "borderRadius": "2px",
+        "transform": "matrix(0.707107, 0.707107, -0.707107, 0.707107, 0, 0)",
+        "innerMarker": "autoxauto"
+      }
+    ],
+    "firstSegment": 325.203125,
+    "secondSegment": 486.975830078125
+  },
+  "sidebar": {
+    "visibleName": "管理员",
+    "emailText": "admin@example.com",
+    "emailTitle": "admin@example.com"
+  },
+  "taskDetail": {
+    "href": "/tasks/a4ae8ff5-fec4-4a04-97c0-2114e2395264",
+    "legacyCrudHeadings": 0,
+    "hasProcessInspector": true
+  }
+}

@@ -1,12 +1,9 @@
+import { createFileRoute, Link } from "@tanstack/react-router"
 import {
-  createFileRoute,
-  Link,
-} from "@tanstack/react-router"
-import {
-  Activity,
   ArrowLeft,
-  CheckCircle2,
+  ArrowRight,
   FileVideo,
+  Gauge,
   LoaderCircle,
   RefreshCw,
   RotateCcw,
@@ -14,36 +11,31 @@ import {
   TriangleAlert,
 } from "lucide-react"
 import {
+  type CSSProperties,
+  type ReactNode,
   useCallback,
   useEffect,
   useState,
 } from "react"
 
-export const Route = createFileRoute(
-  "/_layout/tasks_/$taskId",
-)({
+import { ResearchContentFrame } from "@/components/Layout/ResearchContentFrame"
+import { useResearchReveal } from "@/hooks/useResearchReveal"
+import { formatEvidenceId } from "@/lib/observationIds"
+
+export const Route = createFileRoute("/_layout/tasks_/$taskId")({
   component: TaskDetailPage,
-  head: () => ({
-    meta: [
-      {
-        title: "任务详情 - 巢影蜂析",
-      },
-    ],
-  }),
+  head: () => ({ meta: [{ title: "分析过程检视 - 巢影蜂析" }] }),
 })
 
 type AnalysisTaskItem = {
   id: string
   video_id: string
   owner_id: string
-
   task_type: string
   status: string
   progress: number
-
   model_name: string | null
   error_message: string | null
-
   created_at: string | null
   started_at: string | null
   completed_at: string | null
@@ -65,159 +57,71 @@ type AnalysisResultItem = {
   task_id: string
   video_id: string
   owner_id: string
-
   detected_individuals: number
   valid_tracks: number
-
   entry_count: number
   exit_count: number
-
   average_speed: number | null
   activity_index: number | null
-
   abnormal_event_count: number
-
   metrics_json: string | null
   result_video_path: string | null
   result_json_path: string | null
-
   created_at: string | null
 }
 
 const API_BASE = "/api/v1"
 
 function getAuthHeaders(): Record<string, string> {
-  const token =
-    localStorage.getItem("access_token")
-
-  if (!token) {
-    return {}
-  }
-
-  return {
-    Authorization: `Bearer ${token}`,
-  }
+  const token = localStorage.getItem("access_token")
+  return token ? { Authorization: `Bearer ${token}` } : {}
 }
 
 function TaskDetailPage() {
-  const { taskId } =
-    Route.useParams()
-
-  const [task, setTask] =
-    useState<AnalysisTaskItem | null>(
-      null,
-    )
-
-  const [video, setVideo] =
-    useState<VideoItem | null>(null)
-
-  const [result, setResult] =
-    useState<AnalysisResultItem | null>(
-      null,
-    )
-
-  const [isLoading, setIsLoading] =
-    useState(true)
-
-  const [isRefreshing, setIsRefreshing] =
-    useState(false)
-
-  const [isReanalyzing, setIsReanalyzing] =
-    useState(false)
-
-  const [isDeleting, setIsDeleting] =
-    useState(false)
-
-  const [errorMessage, setErrorMessage] =
-    useState<string | null>(null)
+  const { taskId } = Route.useParams()
+  const navigate = Route.useNavigate()
+  const [task, setTask] = useState<AnalysisTaskItem | null>(null)
+  const [video, setVideo] = useState<VideoItem | null>(null)
+  const [result, setResult] = useState<AnalysisResultItem | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [isReanalyzing, setIsReanalyzing] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const loadData = useCallback(
     async (manual = false) => {
-      if (manual) {
-        setIsRefreshing(true)
-      } else {
-        setIsLoading(true)
-      }
-
+      manual ? setIsRefreshing(true) : setIsLoading(true)
       setErrorMessage(null)
-
       try {
-        const headers =
-          getAuthHeaders()
-
-        // 先读取任务
-        const taskResponse =
-          await fetch(
-            `${API_BASE}/tasks/${taskId}`,
-            {
-              headers,
-            },
-          )
-
+        const headers = getAuthHeaders()
+        const taskResponse = await fetch(`${API_BASE}/tasks/${taskId}`, {
+          headers,
+        })
         if (!taskResponse.ok) {
-          throw new Error(
-            `读取任务详情失败：${taskResponse.status}`,
-          )
+          throw new Error(`读取任务详情失败：${taskResponse.status}`)
         }
-
-        const taskData =
-          (await taskResponse.json()) as AnalysisTaskItem
-
+        const taskData = (await taskResponse.json()) as AnalysisTaskItem
         setTask(taskData)
-
-        // 再读取关联视频和结果
-        const [
-          videoResponse,
-          resultResponse,
-        ] = await Promise.all([
-          fetch(
-            `${API_BASE}/videos/${taskData.video_id}`,
-            {
-              headers,
-            },
-          ),
-
-          fetch(
-            `${API_BASE}/results/task/${taskId}`,
-            {
-              headers,
-            },
-          ),
+        const [videoResponse, resultResponse] = await Promise.all([
+          fetch(`${API_BASE}/videos/${taskData.video_id}`, { headers }),
+          fetch(`${API_BASE}/results/task/${taskId}`, { headers }),
         ])
-
         if (!videoResponse.ok) {
-          throw new Error(
-            `读取视频信息失败：${videoResponse.status}`,
-          )
+          throw new Error(`读取视频信息失败：${videoResponse.status}`)
         }
-
-        const videoData =
-          (await videoResponse.json()) as VideoItem
-
-        setVideo(videoData)
-
-        // 没有分析结果时，404 是正常情况
+        setVideo((await videoResponse.json()) as VideoItem)
         if (resultResponse.ok) {
-          const resultData =
-            (await resultResponse.json()) as AnalysisResultItem
-
-          setResult(resultData)
-        } else if (
-          resultResponse.status === 404
-        ) {
+          setResult((await resultResponse.json()) as AnalysisResultItem)
+        } else if (resultResponse.status === 404) {
           setResult(null)
         } else {
-          throw new Error(
-            `读取分析结果失败：${resultResponse.status}`,
-          )
+          throw new Error(`读取分析结果失败：${resultResponse.status}`)
         }
       } catch (error) {
         console.error(error)
-
         setErrorMessage(
-          error instanceof Error
-            ? error.message
-            : "读取任务详情失败",
+          error instanceof Error ? error.message : "读取任务详情失败",
         )
       } finally {
         setIsLoading(false)
@@ -229,697 +133,486 @@ function TaskDetailPage() {
 
   useEffect(() => {
     void loadData()
+  }, [loadData])
 
-    const timer =
-      window.setInterval(() => {
-        if (
-          task?.status === "PENDING" ||
-          task?.status === "PROCESSING"
-        ) {
-          void loadData()
-        }
-      }, 2000)
+  useEffect(() => {
+    if (task?.status !== "PENDING" && task?.status !== "PROCESSING") return
+    const timer = window.setInterval(() => void loadData(true), 2000)
+    return () => window.clearInterval(timer)
+  }, [loadData, task?.status])
 
-    return () => {
-      window.clearInterval(timer)
-    }
-  }, [
-    loadData,
-    task?.status,
-  ])
+  useResearchReveal(
+    ".task-inspector",
+    `${isLoading}:${task?.id ?? "none"}`,
+    true,
+  )
 
   const handleReanalyze = async () => {
-    if (!task) {
+    if (!task) return
+    if (!window.confirm("确定重新分析该视频吗？系统将创建一个新的分析任务。"))
       return
-    }
-
-    const confirmed =
-      window.confirm(
-        "确定重新分析该视频吗？系统将创建一个新的分析任务。",
-      )
-
-    if (!confirmed) {
-      return
-    }
-
     setIsReanalyzing(true)
     setErrorMessage(null)
-
     try {
-      const response = await fetch(
-        `${API_BASE}/tasks/`,
-        {
-          method: "POST",
-          headers: {
-            ...getAuthHeaders(),
-            "Content-Type":
-              "application/json",
-          },
-          body: JSON.stringify({
-            video_id: task.video_id,
-            model_name:
-              task.model_name ??
-              "baseline-v1",
-          }),
-        },
-      )
-
+      const response = await fetch(`${API_BASE}/tasks/`, {
+        method: "POST",
+        headers: { ...getAuthHeaders(), "Content-Type": "application/json" },
+        body: JSON.stringify({
+          video_id: task.video_id,
+          model_name: task.model_name ?? "baseline-v1",
+        }),
+      })
       if (!response.ok) {
-        const errorBody =
-          await response
-            .json()
-            .catch(() => null)
-
-        throw new Error(
-          errorBody?.detail ??
-            `重新分析失败：${response.status}`,
-        )
+        const errorBody = await response.json().catch(() => null)
+        throw new Error(errorBody?.detail ?? `重新分析失败：${response.status}`)
       }
-
-      window.location.href =
-        "/tasks"
+      await navigate({ to: "/tasks" })
     } catch (error) {
       console.error(error)
-
-      setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : "重新分析失败",
-      )
+      setErrorMessage(error instanceof Error ? error.message : "重新分析失败")
     } finally {
       setIsReanalyzing(false)
     }
   }
 
   const handleDelete = async () => {
-    if (!task) {
+    if (!task) return
+    if (task.status === "PENDING" || task.status === "PROCESSING") {
+      setErrorMessage("正在执行的任务不能删除")
       return
     }
-
     if (
-      task.status === "PENDING" ||
-      task.status === "PROCESSING"
-    ) {
-      setErrorMessage(
-        "正在执行的任务不能删除",
-      )
-      return
-    }
-
-    const confirmed =
-      window.confirm(
+      !window.confirm(
         "确定删除该分析任务吗？关联分析结果也会被删除，此操作不可恢复。",
       )
-
-    if (!confirmed) {
+    )
       return
-    }
-
     setIsDeleting(true)
     setErrorMessage(null)
-
     try {
-      const response = await fetch(
-        `${API_BASE}/tasks/${task.id}`,
-        {
-          method: "DELETE",
-          headers:
-            getAuthHeaders(),
-        },
-      )
-
+      const response = await fetch(`${API_BASE}/tasks/${task.id}`, {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+      })
       if (!response.ok) {
-        const errorBody =
-          await response
-            .json()
-            .catch(() => null)
-
-        throw new Error(
-          errorBody?.detail ??
-            `删除任务失败：${response.status}`,
-        )
+        const errorBody = await response.json().catch(() => null)
+        throw new Error(errorBody?.detail ?? `删除任务失败：${response.status}`)
       }
-
-      window.location.href =
-        "/tasks"
+      await navigate({ to: "/tasks" })
     } catch (error) {
       console.error(error)
-
-      setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : "删除任务失败",
-      )
+      setErrorMessage(error instanceof Error ? error.message : "删除任务失败")
     } finally {
       setIsDeleting(false)
     }
   }
 
-  if (isLoading) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="text-center text-muted-foreground">
-          <LoaderCircle className="mx-auto mb-3 size-8 animate-spin" />
-          正在读取任务详情...
-        </div>
-      </div>
-    )
-  }
+  if (isLoading) return <TaskInspectorLoading />
 
   if (!task) {
     return (
-      <div className="rounded-xl border p-8 text-center">
-        未找到分析任务
-      </div>
+      <ResearchContentFrame
+        as="main"
+        size="workspace"
+        density="process"
+        className="research-page task-inspector task-inspector-state"
+      >
+        <TriangleAlert aria-hidden="true" />
+        <h1>未找到分析任务</h1>
+        <Link to="/tasks">返回分析任务</Link>
+        {errorMessage && <p>{errorMessage}</p>}
+      </ResearchContentFrame>
     )
   }
 
+  const status = getTaskStatus(task.status)
+  const progress = Math.max(0, Math.min(100, task.progress))
+  const analysisId = formatEvidenceId("A", task.id)
+  const videoId = formatEvidenceId("V", task.video_id)
+  const resultId = result ? formatEvidenceId("R", result.id) : null
+
   return (
-    <div className="space-y-8">
-      {/* 返回 */}
-      <Link
-        to="/tasks"
-        className="inline-flex items-center gap-2 text-sm text-muted-foreground transition hover:text-foreground"
-      >
-        <ArrowLeft className="size-4" />
-        返回分析任务
-      </Link>
-
-      {/* 页面标题 */}
-      <div className="flex flex-wrap items-start justify-between gap-4">
+    <ResearchContentFrame
+      as="main"
+      size="workspace"
+      density="process"
+      className="research-page research-page--task-detail task-inspector"
+    >
+      <header className="task-inspector-header">
         <div>
-          <p className="text-sm text-muted-foreground">
-            巢影蜂析 · 分析任务详情
-          </p>
-
-          <h1 className="mt-2 text-3xl font-bold">
-            任务详情
+          <p className="research-eyebrow">ANALYSIS RECORD</p>
+          <h1>
+            任务详情 <span data-presentation-id={analysisId}>{analysisId}</span>
           </h1>
-
-          <p className="mt-2 font-mono text-sm text-muted-foreground">
-            {task.id}
+          <p className="task-inspector-subtitle">
+            <span data-presentation-id={videoId}>{videoId}</span>
+            <i aria-hidden="true">·</i>
+            <span>{task.model_name ?? "baseline-v1"}</span>
+            <i aria-hidden="true">·</i>
+            <strong data-tone={status.tone}>{status.label}</strong>
           </p>
         </div>
-
-        <div className="flex flex-wrap gap-3">
+        <div className="task-inspector-actions">
           <button
             type="button"
-            onClick={() =>
-              void loadData(true)
-            }
+            className="research-icon-action"
+            onClick={() => void loadData(true)}
             disabled={isRefreshing}
-            className="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition hover:bg-muted disabled:opacity-50"
           >
             <RefreshCw
-              className={`size-4 ${
-                isRefreshing
-                  ? "animate-spin"
-                  : ""
-              }`}
+              className={isRefreshing ? "animate-spin" : ""}
+              aria-hidden="true"
             />
             刷新
           </button>
-
-          {(task.status ===
-            "COMPLETED" ||
-            task.status ===
-              "FAILED") && (
+          {(task.status === "COMPLETED" || task.status === "FAILED") && (
             <button
               type="button"
-              onClick={() =>
-                void handleReanalyze()
-              }
-              disabled={
-                isReanalyzing
-              }
-              className="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition hover:bg-muted disabled:opacity-50"
+              className="research-icon-action"
+              onClick={() => void handleReanalyze()}
+              disabled={isReanalyzing}
             >
               {isReanalyzing ? (
-                <LoaderCircle className="size-4 animate-spin" />
+                <LoaderCircle className="animate-spin" aria-hidden="true" />
               ) : (
-                <RotateCcw className="size-4" />
+                <RotateCcw aria-hidden="true" />
               )}
-
               重新分析
             </button>
           )}
-
-          {(task.status ===
-            "COMPLETED" ||
-            task.status ===
-              "FAILED") && (
-            <button
-              type="button"
-              onClick={() =>
-                void handleDelete()
-              }
-              disabled={isDeleting}
-              className="inline-flex items-center gap-2 rounded-lg border border-red-500/20 px-4 py-2 text-sm font-medium text-red-500 transition hover:bg-red-500/10 disabled:opacity-50"
-            >
-              {isDeleting ? (
-                <LoaderCircle className="size-4 animate-spin" />
-              ) : (
-                <Trash2 className="size-4" />
-              )}
-
-              删除任务
-            </button>
-          )}
+          <Link to="/tasks" className="research-icon-action">
+            <ArrowLeft aria-hidden="true" />
+            返回
+          </Link>
         </div>
-      </div>
+      </header>
 
-      {/* 错误 */}
       {errorMessage && (
-        <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-4 text-sm text-red-500">
-          <div className="flex items-center gap-2">
-            <TriangleAlert className="size-4" />
-            {errorMessage}
-          </div>
+        <div className="research-alert" role="alert">
+          <TriangleAlert aria-hidden="true" />
+          {errorMessage}
         </div>
       )}
 
-      {/* 状态 + 进度 */}
-      <section className="rounded-xl border p-6">
-        <div className="flex flex-wrap items-center justify-between gap-4">
+      <section
+        className="task-process-instrument"
+        aria-labelledby="task-process-title"
+        data-status={status.tone}
+        data-research-reveal
+      >
+        <header>
           <div>
-            <p className="text-sm text-muted-foreground">
-              当前任务状态
-            </p>
-
-            <div className="mt-2">
-              <TaskStatusBadge
-                status={task.status}
-              />
-            </div>
+            <p className="research-eyebrow">PROCESS INSTRUMENT</p>
+            <h2 id="task-process-title">分析证据与过程</h2>
           </div>
-
-          <div className="text-right">
-            <p className="text-sm text-muted-foreground">
-              分析进度
-            </p>
-
-            <p className="mt-1 text-3xl font-semibold">
-              {task.progress}%
-            </p>
+          <div className="task-process-state">
+            <span>{status.label}</span>
+            <strong>{progress}%</strong>
           </div>
-        </div>
-
-        <div className="mt-6 h-3 overflow-hidden rounded-full bg-muted">
-          <div
-            className="h-full rounded-full bg-amber-500 transition-all duration-500"
-            style={{
-              width: `${Math.max(
-                0,
-                Math.min(
-                  100,
-                  task.progress,
-                ),
-              )}%`,
-            }}
+        </header>
+        <div className="task-process-rail">
+          <ProcessNode
+            phase="Create"
+            label="原始观测"
+            evidenceId={videoId}
+            detail={formatDate(task.created_at)}
+            tone="video"
+            action={
+              <Link to="/videos/$videoId" params={{ videoId: task.video_id }}>
+                查看观测 <ArrowRight aria-hidden="true" />
+              </Link>
+            }
           />
+          <span className="task-process-connector" aria-hidden="true" />
+          <ProcessNode
+            phase="Analyze"
+            label="视频分析"
+            evidenceId={analysisId}
+            detail={`${task.model_name ?? "baseline-v1"} · ${status.label}`}
+            tone="analysis"
+          />
+          <span className="task-process-connector" aria-hidden="true" />
+          <ProcessNode
+            phase="Result"
+            label="行为结果"
+            evidenceId={resultId ?? "暂无结果"}
+            detail={
+              result
+                ? formatDate(result.created_at)
+                : task.status === "COMPLETED"
+                  ? "结果记录尚未返回"
+                  : "等待分析完成"
+            }
+            tone={result ? "result" : "pending"}
+            action={
+              result ? (
+                <Link to="/results" search={{ task_id: task.id }}>
+                  查看结果 <ArrowRight aria-hidden="true" />
+                </Link>
+              ) : undefined
+            }
+          />
+        </div>
+        <div
+          className="task-process-progress"
+          style={{ "--task-progress": `${progress}%` } as CSSProperties}
+          role="img"
+          aria-label={`分析进度 ${progress}%`}
+        >
+          <span />
         </div>
       </section>
 
-      {/* 基础信息 */}
-      <section className="rounded-xl border">
-        <div className="border-b p-6">
-          <h2 className="text-lg font-semibold">
-            任务信息
-          </h2>
+      <section
+        className="task-reading-section"
+        aria-labelledby="task-readings-title"
+        data-research-reveal
+      >
+        <div className="task-inspector-section-heading">
+          <div>
+            <p className="research-eyebrow">TASK READINGS</p>
+            <h2 id="task-readings-title">任务读数</h2>
+          </div>
+          <p>时间、模型与状态来自当前任务记录</p>
         </div>
-
-        <div className="grid gap-6 p-6 sm:grid-cols-2 lg:grid-cols-3">
-          <InfoItem
-            label="关联视频"
-            value={
-              video?.original_filename ??
-              "未知视频"
-            }
+        <dl className="task-reading-grid">
+          <Reading label="创建时间" value={formatDate(task.created_at)} />
+          <Reading label="开始时间" value={formatDate(task.started_at)} />
+          <Reading label="完成时间" value={formatDate(task.completed_at)} />
+          <Reading
+            label="运行耗时"
+            value={formatDuration(task.started_at, task.completed_at)}
           />
-
-          <InfoItem
-            label="模型版本"
-            value={
-              task.model_name ??
-              "baseline-v1"
-            }
-          />
-
-          <InfoItem
-            label="任务类型"
-            value={task.task_type}
-          />
-
-          <InfoItem
-            label="创建时间"
-            value={formatDate(
-              task.created_at,
-            )}
-          />
-
-          <InfoItem
-            label="开始时间"
-            value={formatDate(
-              task.started_at,
-            )}
-          />
-
-          <InfoItem
-            label="完成时间"
-            value={formatDate(
-              task.completed_at,
-            )}
-          />
-
-          <InfoItem
-            label="分析耗时"
-            value={formatDuration(
-              task.started_at,
-              task.completed_at,
-            )}
-          />
-
-          <InfoItem
-            label="监测场景"
-            value={formatSceneType(
-              video?.scene_type,
-            )}
-          />
-
-          <InfoItem
-            label="视频状态"
-            value={
-              video?.status ?? "-"
-            }
-          />
-        </div>
+          <Reading label="分析模型" value={task.model_name ?? "baseline-v1"} />
+          <Reading label="当前状态" value={status.label} tone={status.tone} />
+        </dl>
       </section>
 
-      {/* 关联分析结果 */}
-      <section className="rounded-xl border">
-        <div className="flex items-center justify-between border-b p-6">
+      <section
+        className="task-association-plane"
+        aria-labelledby="task-association-title"
+        data-research-reveal
+      >
+        <div className="task-inspector-section-heading">
           <div>
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="size-5" />
-
-              <h2 className="text-lg font-semibold">
-                关联分析结果
-              </h2>
-            </div>
-
-            <p className="mt-1 text-sm text-muted-foreground">
-              当前任务生成的行为量化数据
-            </p>
+            <p className="research-eyebrow">ASSOCIATED EVIDENCE</p>
+            <h2 id="task-association-title">关联证据</h2>
           </div>
-
-          {result && (
-            <a
-              href={`/results?task_id=${task.id}`}
-              className="rounded-lg border px-3 py-2 text-sm font-medium transition hover:bg-muted"
-            >
-              查看完整结果
-            </a>
+        </div>
+        <article className="task-result-rail">
+          <Gauge aria-hidden="true" />
+          <div>
+            <span>关联结果</span>
+            <strong data-presentation-id={resultId ?? undefined}>
+              {resultId ?? "暂无分析结果"}
+            </strong>
+          </div>
+          {result ? (
+            <>
+              <dl>
+                <div>
+                  <dt>检测个体</dt>
+                  <dd>{result.detected_individuals}</dd>
+                </div>
+                <div>
+                  <dt>有效轨迹</dt>
+                  <dd>{result.valid_tracks}</dd>
+                </div>
+                <div>
+                  <dt>活动指数</dt>
+                  <dd>{result.activity_index ?? "—"}</dd>
+                </div>
+                <div>
+                  <dt>异常</dt>
+                  <dd>{result.abnormal_event_count}</dd>
+                </div>
+              </dl>
+              <Link to="/results" search={{ task_id: task.id }}>
+                查看结果 <ArrowRight aria-hidden="true" />
+              </Link>
+            </>
+          ) : (
+            <p>
+              {task.status === "COMPLETED"
+                ? "当前任务尚无可读取的结果记录"
+                : "任务完成后建立结果证据节点"}
+            </p>
           )}
-        </div>
-
-        {!result ? (
-          <div className="flex h-48 items-center justify-center">
-            <div className="text-center text-muted-foreground">
-              <Activity className="mx-auto mb-3 size-8" />
-
-              {task.status ===
-              "COMPLETED"
-                ? "暂无分析结果"
-                : "任务完成后将在此显示分析结果"}
-            </div>
+        </article>
+        <article className="task-observation-rail">
+          <FileVideo aria-hidden="true" />
+          <div className="task-observation-identity">
+            <span>关联观测</span>
+            <strong data-presentation-id={videoId}>{videoId}</strong>
           </div>
-        ) : (
-          <div className="grid gap-4 p-6 sm:grid-cols-2 lg:grid-cols-4">
-            <ResultItem
-              label="检测个体"
-              value={
-                result.detected_individuals
-              }
-            />
-
-            <ResultItem
-              label="有效轨迹"
-              value={
-                result.valid_tracks
-              }
-            />
-
-            <ResultItem
-              label="进巢数量"
-              value={
-                result.entry_count
-              }
-            />
-
-            <ResultItem
-              label="出巢数量"
-              value={
-                result.exit_count
-              }
-            />
-
-            <ResultItem
-              label="平均速度"
-              value={
-                result.average_speed ??
-                "-"
-              }
-            />
-
-            <ResultItem
-              label="活动指数"
-              value={
-                result.activity_index ??
-                "-"
-              }
-            />
-
-            <ResultItem
-              label="异常事件"
-              value={
-                result.abnormal_event_count
-              }
-            />
+          <div>
+            <span>观察场景</span>
+            <strong>{formatSceneType(video?.scene_type)}</strong>
           </div>
-        )}
+          <div>
+            <span>记录时间</span>
+            <strong>{formatDate(video?.created_at ?? null)}</strong>
+          </div>
+          <p title={video?.original_filename}>
+            {video?.original_filename ?? "关联视频不可用"}
+          </p>
+          <Link to="/videos/$videoId" params={{ videoId: task.video_id }}>
+            查看观测 <ArrowRight aria-hidden="true" />
+          </Link>
+        </article>
       </section>
 
-      {/* 视频入口 */}
-      {video && (
-        <section className="rounded-xl border p-6">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <FileVideo className="size-5" />
-
-              <div>
-                <p className="font-medium">
-                  {video.original_filename}
-                </p>
-
-                <p className="text-sm text-muted-foreground">
-                  查看原始视频及历史分析
-                </p>
-              </div>
-            </div>
-
-            <a
-              href={`/videos/${video.id}`}
-              className="rounded-lg border px-4 py-2 text-sm font-medium transition hover:bg-muted"
-            >
-              查看视频详情
-            </a>
-          </div>
-        </section>
-      )}
+      <details className="task-technical-details">
+        <summary>技术详情</summary>
+        <dl>
+          <Reading label="任务类型" value={task.task_type} technical />
+          <Reading label="状态枚举" value={task.status} technical />
+          <Reading label="任务 UUID" value={task.id} technical />
+          <Reading label="视频 UUID" value={task.video_id} technical />
+        </dl>
+        {(task.status === "COMPLETED" || task.status === "FAILED") && (
+          <button
+            type="button"
+            className="task-delete-action"
+            onClick={() => void handleDelete()}
+            disabled={isDeleting}
+          >
+            {isDeleting ? (
+              <LoaderCircle className="animate-spin" aria-hidden="true" />
+            ) : (
+              <Trash2 aria-hidden="true" />
+            )}
+            删除任务
+          </button>
+        )}
+      </details>
 
       {task.error_message && (
-        <section className="rounded-xl border border-red-500/20 bg-red-500/5 p-6">
-          <div className="flex gap-3">
-            <TriangleAlert className="mt-0.5 size-5 text-red-500" />
-
-            <div>
-              <p className="font-medium text-red-500">
-                任务错误信息
-              </p>
-
-              <p className="mt-2 text-sm text-red-500">
-                {task.error_message}
-              </p>
-            </div>
+        <section className="task-error-record" role="alert">
+          <TriangleAlert aria-hidden="true" />
+          <div>
+            <strong>任务错误记录</strong>
+            <p>{task.error_message}</p>
           </div>
         </section>
       )}
-    </div>
+    </ResearchContentFrame>
   )
 }
 
-function InfoItem({
+function TaskInspectorLoading() {
+  return (
+    <ResearchContentFrame
+      as="main"
+      size="workspace"
+      density="process"
+      className="research-page task-inspector task-inspector-loading"
+      role="status"
+      aria-live="polite"
+      aria-busy="true"
+      data-route-loading-skeleton=""
+    >
+      <header className="task-inspector-header">
+        <div className="task-inspector-loading-heading">
+          <span className="research-skeleton is-short" />
+          <span className="research-skeleton is-medium" />
+          <span className="research-skeleton is-wide" />
+        </div>
+      </header>
+      <section className="research-loading-plane">
+        <div className="research-loading-copy">
+          <LoaderCircle className="animate-spin" aria-hidden="true" />
+          正在读取分析过程，工作站与导航保持可见…
+        </div>
+        <div className="research-loading-row" aria-hidden="true">
+          <span className="research-skeleton is-medium" />
+          <span className="research-skeleton is-wide" />
+          <span className="research-skeleton is-short" />
+        </div>
+      </section>
+    </ResearchContentFrame>
+  )
+}
+
+function ProcessNode({
+  phase,
+  label,
+  evidenceId,
+  detail,
+  tone,
+  action,
+}: {
+  phase: string
+  label: string
+  evidenceId: string
+  detail: string
+  tone: "video" | "analysis" | "result" | "pending"
+  action?: ReactNode
+}) {
+  return (
+    <article className="task-process-node" data-tone={tone}>
+      <span className="task-process-phase">{phase}</span>
+      <strong>{evidenceId}</strong>
+      <p>{label}</p>
+      <small>{detail}</small>
+      {action}
+    </article>
+  )
+}
+
+function Reading({
   label,
   value,
+  tone,
+  technical = false,
 }: {
   label: string
   value: string
+  tone?: string
+  technical?: boolean
 }) {
   return (
-    <div>
-      <p className="text-xs text-muted-foreground">
-        {label}
-      </p>
-
-      <p className="mt-2 break-all font-medium">
-        {value}
-      </p>
+    <div data-tone={tone} data-technical={technical ? "" : undefined}>
+      <dt>{label}</dt>
+      <dd>{value}</dd>
     </div>
   )
 }
 
-function ResultItem({
-  label,
-  value,
-}: {
-  label: string
-  value: string | number
-}) {
-  return (
-    <div className="rounded-xl bg-muted/30 p-4">
-      <p className="text-xs text-muted-foreground">
-        {label}
-      </p>
-
-      <p className="mt-2 text-2xl font-semibold">
-        {value}
-      </p>
-    </div>
-  )
+function getTaskStatus(status: string) {
+  if (status === "COMPLETED") return { label: "分析完成", tone: "complete" }
+  if (status === "PROCESSING") return { label: "分析中", tone: "processing" }
+  if (status === "FAILED") return { label: "分析失败", tone: "failed" }
+  return { label: "等待分析", tone: "pending" }
 }
 
-function TaskStatusBadge({
-  status,
-}: {
-  status: string
-}) {
-  const labels: Record<
-    string,
-    string
-  > = {
-    PENDING: "等待分析",
-    PROCESSING: "分析中",
-    COMPLETED: "分析完成",
-    FAILED: "分析失败",
-  }
-
-  const styles: Record<
-    string,
-    string
-  > = {
-    PENDING:
-      "bg-amber-500/10 text-amber-600",
-
-    PROCESSING:
-      "bg-purple-500/10 text-purple-600",
-
-    COMPLETED:
-      "bg-green-500/10 text-green-600",
-
-    FAILED:
-      "bg-red-500/10 text-red-600",
-  }
-
-  return (
-    <span
-      className={`inline-flex rounded-full px-3 py-1.5 text-sm font-medium ${
-        styles[status] ??
-        "bg-muted text-muted-foreground"
-      }`}
-    >
-      {labels[status] ?? status}
-    </span>
-  )
+function formatSceneType(value?: string) {
+  if (value === "OUTDOOR") return "户外可见光"
+  if (value === "INDOOR") return "巢内红外"
+  return value ?? "未知场景"
 }
 
-function formatSceneType(
-  value?: string,
-) {
-  if (value === "OUTDOOR") {
-    return "巢外可见光"
-  }
-
-  if (value === "INDOOR") {
-    return "巢内红外"
-  }
-
-  return value ?? "-"
-}
-
-function formatDate(
-  value: string | null,
-) {
-  if (!value) {
-    return "-"
-  }
-
+function formatDate(value: string | null) {
+  if (!value) return "—"
   const date = new Date(value)
-
-  if (
-    Number.isNaN(
-      date.getTime(),
-    )
-  ) {
-    return value
-  }
-
-  return date.toLocaleString(
-    "zh-CN",
-  )
+  if (Number.isNaN(date.getTime())) return value
+  return new Intl.DateTimeFormat("zh-CN", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: false,
+  }).format(date)
 }
 
-function formatDuration(
-  startedAt: string | null,
-  completedAt: string | null,
-) {
-  if (
-    !startedAt ||
-    !completedAt
-  ) {
-    return "-"
-  }
-
-  const start =
-    new Date(startedAt).getTime()
-
-  const end =
-    new Date(
-      completedAt,
-    ).getTime()
-
-  if (
-    Number.isNaN(start) ||
-    Number.isNaN(end)
-  ) {
-    return "-"
-  }
-
-  const seconds = Math.max(
-    0,
-    Math.round(
-      (end - start) / 1000,
-    ),
-  )
-
-  if (seconds < 60) {
-    return `${seconds} 秒`
-  }
-
-  const minutes =
-    Math.floor(seconds / 60)
-
-  const remainder =
-    seconds % 60
-
-  return `${minutes} 分 ${remainder} 秒`
+function formatDuration(startedAt: string | null, completedAt: string | null) {
+  if (!startedAt || !completedAt) return "—"
+  const start = new Date(startedAt).getTime()
+  const end = new Date(completedAt).getTime()
+  if (Number.isNaN(start) || Number.isNaN(end)) return "—"
+  const seconds = Math.max(0, Math.round((end - start) / 1000))
+  if (seconds < 60) return `${seconds} 秒`
+  return `${Math.floor(seconds / 60)} 分 ${seconds % 60} 秒`
 }

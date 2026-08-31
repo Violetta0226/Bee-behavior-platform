@@ -1,0 +1,231 @@
+{
+  "phase": "after",
+  "baseURL": "http://localhost:8000",
+  "viewport": {
+    "width": 1914,
+    "height": 960
+  },
+  "deviceScaleFactor": 1,
+  "browserZoom": 1,
+  "videos": {
+    "url": "http://localhost:8000/videos",
+    "summaryValues": [
+      {
+        "text": "1",
+        "fontSize": 18,
+        "height": 18
+      },
+      {
+        "text": "1",
+        "fontSize": 18,
+        "height": 18
+      },
+      {
+        "text": "0",
+        "fontSize": 18,
+        "height": 18
+      },
+      {
+        "text": "0",
+        "fontSize": 18,
+        "height": 18
+      },
+      {
+        "text": "1",
+        "fontSize": 18,
+        "height": 18
+      }
+    ],
+    "largeKpiCount": 0,
+    "visibleSummaryCount": 5
+  },
+  "sidebar": {
+    "text": "巢影蜂析\n\n智慧蜂群行为分析平台\n\n综合态势\n观测档案\n分析任务\n分析结果\n个体追踪\n群体行为\n异常监测\n数据与报告\n系统管理\n外观\n切换外观主题\n管\n\n管理员\n\nadmin@example.com",
+    "hasAppearanceEnglish": false,
+    "hasAppearanceChinese": true,
+    "titledTexts": [
+      {
+        "text": "管理员",
+        "title": "管理员"
+      },
+      {
+        "text": "admin@example.com",
+        "title": "admin@example.com"
+      }
+    ],
+    "accountEmailMatches": 1
+  },
+  "tasks": {
+    "url": "http://localhost:8000/tasks",
+    "typedNodeCount": 3,
+    "nodeStyles": [
+      {
+        "className": "process-track-node is-origin",
+        "role": "create-origin",
+        "width": 12,
+        "height": 12,
+        "borderRadius": "50%",
+        "transform": "none",
+        "backgroundColor": "color(srgb 0.934902 0.946275 0.958824)"
+      },
+      {
+        "className": "process-track-node is-analysis",
+        "role": "analysis-node",
+        "width": 10,
+        "height": 10,
+        "borderRadius": "50%",
+        "transform": "none",
+        "backgroundColor": "color(srgb 0.934902 0.946275 0.958824)"
+      },
+      {
+        "className": "process-track-node is-evidence",
+        "role": "result-endpoint",
+        "width": 14.14208984375,
+        "height": 14.14208984375,
+        "borderRadius": "2px",
+        "transform": "matrix(0.707107, 0.707107, -0.707107, 0.707107, 0, 0)",
+        "backgroundColor": "rgb(95, 107, 87)"
+      }
+    ],
+    "distinctNodeRoles": [
+      "create-origin",
+      "analysis-node",
+      "result-endpoint"
+    ],
+    "taskHref": "/tasks/a4ae8ff5-fec4-4a04-97c0-2114e2395264"
+  },
+  "taskDetail": {
+    "url": "http://localhost:8000/tasks/a4ae8ff5-fec4-4a04-97c0-2114e2395264",
+    "headings": [
+      "任务详情 A•570",
+      "分析证据与过程",
+      "任务读数",
+      "关联证据"
+    ],
+    "hasProcessInspector": true,
+    "hasReadingGrid": true,
+    "links": [
+      {
+        "text": "综合态势",
+        "href": "/"
+      },
+      {
+        "text": "观测档案",
+        "href": "/videos"
+      },
+      {
+        "text": "分析任务",
+        "href": "/tasks"
+      },
+      {
+        "text": "分析结果",
+        "href": "/results"
+      },
+      {
+        "text": "个体追踪",
+        "href": "/tracking"
+      },
+      {
+        "text": "群体行为",
+        "href": "/behavior"
+      },
+      {
+        "text": "异常监测",
+        "href": "/alerts"
+      },
+      {
+        "text": "数据与报告",
+        "href": "/reports"
+      },
+      {
+        "text": "系统管理",
+        "href": "/admin"
+      },
+      {
+        "text": "返回",
+        "href": "/tasks"
+      },
+      {
+        "text": "查看观测",
+        "href": "/videos/dedc438e-1bbc-4d6d-b554-1d104bad5562"
+      },
+      {
+        "text": "查看结果",
+        "href": "/results?task_id=a4ae8ff5-fec4-4a04-97c0-2114e2395264"
+      },
+      {
+        "text": "查看结果",
+        "href": "/results?task_id=a4ae8ff5-fec4-4a04-97c0-2114e2395264"
+      },
+      {
+        "text": "查看观测",
+        "href": "/videos/dedc438e-1bbc-4d6d-b554-1d104bad5562"
+      }
+    ]
+  },
+  "results": {
+    "url": "http://localhost:8000/results",
+    "scrollY": 0,
+    "entryText": "32",
+    "gateText": "巢门",
+    "exitText": "29",
+    "entry": {
+      "x": 317.453125,
+      "y": 685,
+      "width": 138.6875,
+      "height": 48,
+      "bottom": 733,
+      "visibleInViewport": true
+    },
+    "gate": {
+      "x": 847.915771484375,
+      "y": 552.674560546875,
+      "width": 34.98095703125,
+      "height": 28.070068359375,
+      "bottom": 580.74462890625,
+      "visibleInViewport": true
+    },
+    "exit": {
+      "x": 1274.671875,
+      "y": 685,
+      "width": 138.6875,
+      "height": 48,
+      "bottom": 733,
+      "visibleInViewport": true
+    },
+    "mainFlows": [
+      {
+        "x": 495.85540771484375,
+        "y": 600.8101806640625,
+        "width": 357.8914794921875,
+        "height": 82.22210693359375,
+        "bottom": 683.0322875976562,
+        "visibleInViewport": true
+      },
+      {
+        "x": 879.0933227539062,
+        "y": 717.33740234375,
+        "width": 355.86370849609375,
+        "height": 79.05084228515625,
+        "bottom": 796.3882446289062,
+        "visibleInViewport": true
+      }
+    ],
+    "provenance": {
+      "x": 263.0625,
+      "y": 185.0625,
+      "width": 1599.875,
+      "height": 72.765625,
+      "bottom": 257.828125,
+      "visibleInViewport": true
+    },
+    "core": {
+      "x": 812.34375,
+      "y": 273.8125,
+      "width": 1028.203125,
+      "height": 95.265625,
+      "bottom": 369.078125,
+      "visibleInViewport": true
+    }
+  }
+}

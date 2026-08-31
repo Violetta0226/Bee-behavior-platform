@@ -60,7 +60,7 @@ export const Route = createFileRoute("/reset-password")({
   head: () => ({
     meta: [
       {
-        title: "Reset Password - FastAPI Template",
+        title: "重置密码｜巢影蜂析",
       },
     ],
   }),

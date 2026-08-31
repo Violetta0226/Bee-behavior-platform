@@ -23,11 +23,11 @@ import { PasswordInput } from "@/components/ui/password-input"
 import useAuth, { isLoggedIn } from "@/hooks/useAuth"
 
 const formSchema = z.object({
-  username: z.email({ message: "Invalid email address" }),
+  username: z.email({ message: "请输入有效的邮箱地址" }),
   password: z
     .string()
-    .min(1, { message: "Password is required" })
-    .min(8, { message: "Password must be at least 8 characters" }),
+    .min(1, { message: "请输入密码" })
+    .min(8, { message: "密码至少需要 8 个字符" }),
 }) satisfies z.ZodType<AccessToken>
 
 type FormData = z.infer<typeof formSchema>
@@ -44,7 +44,7 @@ export const Route = createFileRoute("/login")({
   head: () => ({
     meta: [
       {
-        title: "Log In - FastAPI Template",
+        title: "登录巢影蜂析｜观测入口",
       },
     ],
   }),
@@ -72,24 +72,27 @@ function Login() {
       <Form {...form}>
         <form
           onSubmit={form.handleSubmit(onSubmit)}
-          className="flex flex-col gap-6"
+          className="auth-login-form flex flex-col gap-6"
         >
-          <div className="flex flex-col items-center gap-2 text-center">
-            <h1 className="text-2xl font-bold">Login to your account</h1>
+          <div className="auth-form-heading flex flex-col items-center gap-2 text-center">
+            <h1 className="text-2xl font-bold">登录巢影蜂析</h1>
+            <p>进入蜂群观测与行为分析工作台</p>
           </div>
 
-          <div className="grid gap-4">
+          <div className="auth-form-fields grid gap-4">
             <FormField
               control={form.control}
               name="username"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Email</FormLabel>
+                  <FormLabel>邮箱</FormLabel>
                   <FormControl>
                     <Input
                       data-testid="email-input"
                       placeholder="user@example.com"
                       type="email"
+                      autoComplete="email"
+                      className="auth-field"
                       {...field}
                     />
                   </FormControl>
@@ -103,19 +106,23 @@ function Login() {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <div className="flex items-center">
-                    <FormLabel>Password</FormLabel>
+                  <div className="auth-password-label-row flex items-center">
+                    <FormLabel>密码</FormLabel>
                     <RouterLink
                       to="/recover-password"
-                      className="ml-auto text-sm underline-offset-4 hover:underline"
+                      className="auth-text-link ml-auto inline-flex items-center text-sm underline-offset-4 hover:underline"
                     >
-                      Forgot your password?
+                      忘记密码？
                     </RouterLink>
                   </div>
                   <FormControl>
                     <PasswordInput
                       data-testid="password-input"
-                      placeholder="Password"
+                      placeholder="请输入密码"
+                      autoComplete="current-password"
+                      className="auth-field"
+                      showPasswordLabel="显示密码"
+                      hidePasswordLabel="隐藏密码"
                       {...field}
                     />
                   </FormControl>
@@ -124,15 +131,19 @@ function Login() {
               )}
             />
 
-            <LoadingButton type="submit" loading={loginMutation.isPending}>
-              Log In
+            <LoadingButton
+              type="submit"
+              className="auth-submit"
+              loading={loginMutation.isPending}
+            >
+              登录
             </LoadingButton>
           </div>
 
-          <div className="text-center text-sm">
-            Don't have an account yet?{" "}
+          <div className="auth-register-prompt text-center text-sm">
+            还没有账号？
             <RouterLink to="/signup" className="underline underline-offset-4">
-              Sign up
+              注册
             </RouterLink>
           </div>
         </form>

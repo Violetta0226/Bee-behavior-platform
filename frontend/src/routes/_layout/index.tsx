@@ -1,36 +1,27 @@
+import { BeePulseChart } from "@/components/Dashboard/BeePulseChart"
+import { BrandBeeMark } from "@/components/Dashboard/BrandBeeMark"
+import { HiveGateFlow } from "@/components/Dashboard/HiveGateFlow"
+import { ObservationVideoPreview } from "@/components/Dashboard/ObservationVideoPreview"
+import "@/components/Dashboard/observation-theme.css"
+import { createFileRoute, Link } from "@tanstack/react-router"
 import {
-  createFileRoute,
-  Link,
-} from "@tanstack/react-router"
-import {
-  Activity,
+  ArrowRight,
   ArrowUpRight,
-  CheckCircle2,
-  Clock3,
+  CalendarDays,
+  ChevronDown,
+  CircleUserRound,
   FileVideo,
   LoaderCircle,
   RefreshCw,
   TriangleAlert,
-  Users,
-  Video,
 } from "lucide-react"
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useState,
-  type ReactNode,
-} from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
+import { ResearchContentFrame } from "@/components/Layout/ResearchContentFrame"
+import { formatEvidenceId } from "@/lib/observationIds"
 
 export const Route = createFileRoute("/_layout/")({
   component: DashboardPage,
-  head: () => ({
-    meta: [
-      {
-        title: "综合态势 - 巢影蜂析",
-      },
-    ],
-  }),
+  head: () => ({ meta: [{ title: "综合态势 - 巢影蜂析" }] }),
 })
 
 type VideoItem = {
@@ -44,10 +35,7 @@ type VideoItem = {
   created_at: string | null
 }
 
-type VideosResponse = {
-  data: VideoItem[]
-  count: number
-}
+type VideosResponse = { data: VideoItem[]; count: number }
 
 type AnalysisTaskItem = {
   id: string
@@ -63,912 +51,1046 @@ type AnalysisTaskItem = {
   completed_at: string | null
 }
 
-type AnalysisTasksResponse = {
-  data: AnalysisTaskItem[]
-  count: number
-}
+type AnalysisTasksResponse = { data: AnalysisTaskItem[]; count: number }
 
 type AnalysisResultItem = {
   id: string
   task_id: string
   video_id: string
   owner_id: string
-
   detected_individuals: number
   valid_tracks: number
-
   entry_count: number
   exit_count: number
-
   average_speed: number | null
   activity_index: number | null
-
   abnormal_event_count: number
-
   metrics_json: string | null
   result_video_path: string | null
   result_json_path: string | null
-
   created_at: string | null
 }
 
-type AnalysisResultsResponse = {
-  data: AnalysisResultItem[]
-  count: number
+type AnalysisResultsResponse = { data: AnalysisResultItem[]; count: number }
+
+type ObservationRecord = {
+  video: VideoItem
+  task: AnalysisTaskItem | null
+  result: AnalysisResultItem | null
 }
 
 const API_BASE = "/api/v1"
 
 function getAuthHeaders(): Record<string, string> {
-  const token =
-    localStorage.getItem("access_token")
+  const token = localStorage.getItem("access_token")
+  return token ? { Authorization: `Bearer ${token}` } : {}
+}
 
-  if (!token) {
-    return {}
-  }
+function useObservationReveal(isLoading: boolean) {
+  useEffect(() => {
+    if (isLoading) return
 
-  return {
-    Authorization: `Bearer ${token}`,
-  }
+    const page = document.querySelector<HTMLElement>(".observation-page")
+    const targets = Array.from(
+      document.querySelectorAll<HTMLElement>("[data-observation-reveal]"),
+    )
+
+    if (!page) return
+
+    const reduceMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches
+
+    if (reduceMotion) {
+      for (const target of targets) target.classList.add("is-revealed")
+      page.classList.add("observation-mounted")
+      return
+    }
+
+    page.classList.add("observation-motion-ready")
+    const mountFrame = window.requestAnimationFrame(() => {
+      page.classList.add("observation-mounted")
+    })
+
+    if (targets.length === 0 || !("IntersectionObserver" in window)) {
+      for (const target of targets) target.classList.add("is-revealed")
+      return () => window.cancelAnimationFrame(mountFrame)
+    }
+
+    const revealTarget = (target: HTMLElement) => {
+      if (target.classList.contains("is-revealed")) return
+      target.classList.add("is-revealed")
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (entry.isIntersecting !== true) continue
+          revealTarget(entry.target as HTMLElement)
+          observer.unobserve(entry.target)
+        }
+      },
+      { rootMargin: "0px 0px -8% 0px", threshold: 0.15 },
+    )
+
+    const revealFrame = window.requestAnimationFrame(() => {
+      for (const target of targets) {
+        if (target.classList.contains("is-revealed")) continue
+        const rect = target.getBoundingClientRect()
+        if (rect.top < window.innerHeight * 0.82) {
+          revealTarget(target)
+        } else {
+          observer.observe(target)
+        }
+      }
+    })
+
+    return () => {
+      window.cancelAnimationFrame(mountFrame)
+      window.cancelAnimationFrame(revealFrame)
+      observer.disconnect()
+    }
+  }, [isLoading])
 }
 
 function DashboardPage() {
-  const [videos, setVideos] =
-    useState<VideoItem[]>([])
+  const [videos, setVideos] = useState<VideoItem[]>([])
+  const [tasks, setTasks] = useState<AnalysisTaskItem[]>([])
+  const [results, setResults] = useState<AnalysisResultItem[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [isRefreshing, setIsRefreshing] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  const [tasks, setTasks] =
-    useState<AnalysisTaskItem[]>([])
+  useObservationReveal(isLoading)
 
-  const [results, setResults] =
-    useState<AnalysisResultItem[]>([])
+  const loadData = useCallback(async (manual = false) => {
+    if (manual) setIsRefreshing(true)
+    else setIsLoading(true)
+    setErrorMessage(null)
 
-  const [isLoading, setIsLoading] =
-    useState(true)
-
-  const [isRefreshing, setIsRefreshing] =
-    useState(false)
-
-  const [errorMessage, setErrorMessage] =
-    useState<string | null>(null)
-
-  const loadData = useCallback(
-    async (manual = false) => {
-      if (manual) {
-        setIsRefreshing(true)
-      } else {
-        setIsLoading(true)
-      }
-
-      setErrorMessage(null)
-
-      try {
-        const headers =
-          getAuthHeaders()
-
-        const [
-          videosResponse,
-          tasksResponse,
-          resultsResponse,
-        ] = await Promise.all([
-          fetch(
-            `${API_BASE}/videos/?skip=0&limit=100`,
-            {
-              headers,
-            },
-          ),
-
-          fetch(
-            `${API_BASE}/tasks/?skip=0&limit=100`,
-            {
-              headers,
-            },
-          ),
-
-          fetch(
-            `${API_BASE}/results/?skip=0&limit=100`,
-            {
-              headers,
-            },
-          ),
+    try {
+      const headers = getAuthHeaders()
+      const [videosResponse, tasksResponse, resultsResponse] =
+        await Promise.all([
+          fetch(`${API_BASE}/videos/?skip=0&limit=100`, { headers }),
+          fetch(`${API_BASE}/tasks/?skip=0&limit=100`, { headers }),
+          fetch(`${API_BASE}/results/?skip=0&limit=100`, { headers }),
         ])
 
-        if (!videosResponse.ok) {
-          throw new Error(
-            `读取视频数据失败：${videosResponse.status}`,
-          )
-        }
-
-        if (!tasksResponse.ok) {
-          throw new Error(
-            `读取任务数据失败：${tasksResponse.status}`,
-          )
-        }
-
-        if (!resultsResponse.ok) {
-          throw new Error(
-            `读取分析结果失败：${resultsResponse.status}`,
-          )
-        }
-
-        const videosData =
-          (await videosResponse.json()) as VideosResponse
-
-        const tasksData =
-          (await tasksResponse.json()) as AnalysisTasksResponse
-
-        const resultsData =
-          (await resultsResponse.json()) as AnalysisResultsResponse
-
-        setVideos(videosData.data)
-        setTasks(tasksData.data)
-        setResults(resultsData.data)
-      } catch (error) {
-        console.error(error)
-
-        setErrorMessage(
-          error instanceof Error
-            ? error.message
-            : "读取综合态势数据失败",
-        )
-      } finally {
-        setIsLoading(false)
-        setIsRefreshing(false)
+      if (!videosResponse.ok) {
+        throw new Error(`读取视频数据失败：${videosResponse.status}`)
       }
-    },
-    [],
-  )
+      if (!tasksResponse.ok) {
+        throw new Error(`读取任务数据失败：${tasksResponse.status}`)
+      }
+      if (!resultsResponse.ok) {
+        throw new Error(`读取分析结果失败：${resultsResponse.status}`)
+      }
+
+      const videosData = (await videosResponse.json()) as VideosResponse
+      const tasksData = (await tasksResponse.json()) as AnalysisTasksResponse
+      const resultsData =
+        (await resultsResponse.json()) as AnalysisResultsResponse
+
+      setVideos(videosData.data)
+      setTasks(tasksData.data)
+      setResults(resultsData.data)
+    } catch (error) {
+      console.error(error)
+      setErrorMessage(
+        error instanceof Error ? error.message : "读取综合态势数据失败",
+      )
+    } finally {
+      setIsLoading(false)
+      setIsRefreshing(false)
+    }
+  }, [])
 
   useEffect(() => {
     void loadData()
-
-    const timer =
-      window.setInterval(() => {
-        void loadData()
-      }, 10000)
-
-    return () => {
-      window.clearInterval(timer)
-    }
+    const timer = window.setInterval(() => void loadData(), 10000)
+    return () => window.clearInterval(timer)
   }, [loadData])
 
-  const videoMap = useMemo(
-    () =>
-      new Map(
-        videos.map((video) => [
-          video.id,
-          video,
-        ]),
-      ),
-    [videos],
-  )
+  const taskSummary = useMemo(() => {
+    const pending = tasks.filter((task) => task.status === "PENDING").length
+    const processing = tasks.filter(
+      (task) => task.status === "PROCESSING",
+    ).length
+    const failed = tasks.filter((task) => task.status === "FAILED").length
+    return { pending, processing, failed }
+  }, [tasks])
 
-  const summary = useMemo(() => {
-    const detectedIndividuals =
-      results.reduce(
-        (sum, result) =>
-          sum +
-          result.detected_individuals,
-        0,
-      )
+  const observationRecords = useMemo<ObservationRecord[]>(() => {
+    const taskByVideo = new Map<string, AnalysisTaskItem>()
+    const resultByVideo = new Map<string, AnalysisResultItem>()
 
-    const abnormalEvents =
-      results.reduce(
-        (sum, result) =>
-          sum +
-          result.abnormal_event_count,
-        0,
-      )
-
-    const outdoorVideos =
-      videos.filter(
-        (video) =>
-          video.scene_type === "OUTDOOR",
-      ).length
-
-    const indoorVideos =
-      videos.filter(
-        (video) =>
-          video.scene_type === "INDOOR",
-      ).length
-
-    const pendingTasks =
-      tasks.filter(
-        (task) =>
-          task.status === "PENDING",
-      ).length
-
-    const processingTasks =
-      tasks.filter(
-        (task) =>
-          task.status === "PROCESSING",
-      ).length
-
-    const completedTasks =
-      tasks.filter(
-        (task) =>
-          task.status === "COMPLETED",
-      ).length
-
-    const failedTasks =
-      tasks.filter(
-        (task) =>
-          task.status === "FAILED",
-      ).length
-
-    return {
-      detectedIndividuals,
-      abnormalEvents,
-
-      outdoorVideos,
-      indoorVideos,
-
-      pendingTasks,
-      processingTasks,
-      completedTasks,
-      failedTasks,
+    for (const task of [...tasks].sort(sortNewestFirst)) {
+      if (!taskByVideo.has(task.video_id)) taskByVideo.set(task.video_id, task)
     }
+    for (const result of [...results].sort(sortNewestFirst)) {
+      if (!resultByVideo.has(result.video_id)) {
+        resultByVideo.set(result.video_id, result)
+      }
+    }
+
+    return [...videos]
+      .sort(sortNewestFirst)
+      .slice(0, 6)
+      .map((video) => ({
+        video,
+        task: taskByVideo.get(video.id) ?? null,
+        result: resultByVideo.get(video.id) ?? null,
+      }))
   }, [videos, tasks, results])
 
-  const recentTasks = useMemo(
-    () => tasks.slice(0, 5),
-    [tasks],
+  const latestResult = useMemo(
+    () => [...results].sort(sortNewestFirst)[0] ?? null,
+    [results],
   )
 
-  const latestResult =
-    results[0] ?? null
+  const latestVideo = useMemo(
+    () => [...videos].sort(sortNewestFirst)[0] ?? null,
+    [videos],
+  )
+  const analysisMatchesLatestVideo = Boolean(
+    latestResult && latestVideo && latestResult.video_id === latestVideo.id,
+  )
 
-  if (isLoading) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="text-center text-muted-foreground">
-          <LoaderCircle className="mx-auto mb-3 size-8 animate-spin" />
+  const latestObservationAt = useMemo(() => {
+    const timestamps = [
+      ...videos.map((video) => video.created_at),
+      ...tasks.map((task) => task.created_at),
+      ...results.map((result) => result.created_at),
+    ]
+      .filter((value): value is string => Boolean(value))
+      .map((value) => new Date(value).getTime())
+      .filter(Number.isFinite)
 
-          <p>正在读取蜂群监测数据...</p>
-        </div>
-      </div>
-    )
-  }
+    return timestamps.length > 0 ? new Date(Math.max(...timestamps)) : null
+  }, [videos, tasks, results])
+
+  if (isLoading) return <DashboardLoading />
+
+  const colonyState = getColonyState(
+    latestResult,
+    videos.length,
+    taskSummary.processing,
+    taskSummary.pending,
+    taskSummary.failed,
+  )
 
   return (
-    <div className="space-y-8">
-      {/* 页面标题 */}
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <p className="text-sm text-muted-foreground">
-            巢影蜂析 · 智慧蜂群行为分析平台
-          </p>
-
-          <h1 className="mt-2 text-3xl font-bold">
-            综合态势
-          </h1>
-
-          <p className="mt-2 max-w-3xl text-muted-foreground">
-            面向巢内外蜜蜂个体识别、连续跟踪、
-            行为分析与蜂群状态量化，
-            汇总当前视频、分析任务及行为结果。
-          </p>
-        </div>
-
-        <button
-          type="button"
-          onClick={() =>
-            void loadData(true)
-          }
-          disabled={isRefreshing}
-          className="flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition hover:bg-muted disabled:opacity-50"
+    <main className="observation-page">
+      <section className="observation-hero" aria-labelledby="today-title">
+        <ResearchContentFrame
+          size="workspace"
+          density="balanced"
+          className="observation-shell"
         >
-          <RefreshCw
-            className={`size-4 ${
-              isRefreshing
-                ? "animate-spin"
-                : ""
-            }`}
-          />
-
-          刷新数据
-        </button>
-      </div>
-
-      {/* 错误提示 */}
-      {errorMessage && (
-        <div className="rounded-xl border border-red-500/30 bg-red-500/5 px-5 py-4 text-sm text-red-500">
-          <div className="flex items-center gap-2">
-            <TriangleAlert className="size-4" />
-            {errorMessage}
-          </div>
-        </div>
-      )}
-
-      {/* 顶部核心指标 */}
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <DashboardMetricCard
-          title="视频总数"
-          value={videos.length}
-          unit="个"
-          description="已接入巢内外监测视频"
-          icon={<Video className="size-5" />}
-          href="/videos"
-        />
-
-        <DashboardMetricCard
-          title="分析任务"
-          value={tasks.length}
-          unit="个"
-          description={`${summary.processingTasks} 个正在分析`}
-          icon={
-            <Activity className="size-5" />
-          }
-          href="/tasks"
-        />
-
-        <DashboardMetricCard
-          title="识别个体"
-          value={
-            summary.detectedIndividuals
-          }
-          unit="只"
-          description="历史分析累计检测个体"
-          icon={<Users className="size-5" />}
-          href="/results"
-        />
-
-        <DashboardMetricCard
-          title="异常事件"
-          value={summary.abnormalEvents}
-          unit="次"
-          description="分析结果累计异常事件"
-          icon={
-            <TriangleAlert className="size-5" />
-          }
-          href="/results"
-        />
-      </div>
-
-      {/* 场景 + 任务 */}
-      <div className="grid gap-6 xl:grid-cols-2">
-        {/* 视频场景 */}
-        <section className="rounded-xl border">
-          <div className="flex items-center justify-between border-b p-6">
-            <div>
-              <h2 className="text-lg font-semibold">
-                监测场景
-              </h2>
-
-              <p className="text-sm text-muted-foreground">
-                巢外可见光与巢内红外视频接入情况
-              </p>
+          <div className="observation-topline" data-observation-mount="brand">
+            <div className="observation-topline-meta">
+              <CalendarDays className="size-4" aria-hidden="true" />
+              <time className="observation-data tabular-nums">
+                {formatLongDate(new Date())}
+              </time>
             </div>
-
-            <Link
-              to="/videos"
-              className="flex items-center gap-1 text-sm text-muted-foreground transition hover:text-foreground"
-            >
-              视频管理
-              <ArrowUpRight className="size-4" />
-            </Link>
-          </div>
-
-          <div className="grid gap-4 p-6 sm:grid-cols-2">
-            <SceneCard
-              title="巢外行为监测"
-              description="可见光视频"
-              count={
-                summary.outdoorVideos
-              }
-              total={videos.length}
-            />
-
-            <SceneCard
-              title="巢内行为监测"
-              description="红外视频"
-              count={
-                summary.indoorVideos
-              }
-              total={videos.length}
-            />
-          </div>
-        </section>
-
-        {/* 任务状态 */}
-        <section className="rounded-xl border">
-          <div className="flex items-center justify-between border-b p-6">
-            <div>
-              <h2 className="text-lg font-semibold">
-                任务运行状态
-              </h2>
-
-              <p className="text-sm text-muted-foreground">
-                当前分析任务执行情况
-              </p>
+            <div className="observation-topline-brand">
+              <BrandBeeMark />
+              <div>
+                <p className="observation-wordmark">巢影蜂析</p>
+                <p className="observation-wordmark-subtitle">
+                  智慧蜂群行为分析平台
+                </p>
+              </div>
             </div>
-
-            <Link
-              to="/tasks"
-              className="flex items-center gap-1 text-sm text-muted-foreground transition hover:text-foreground"
-            >
-              任务中心
-              <ArrowUpRight className="size-4" />
-            </Link>
+            <div className="observation-topline-actions">
+              <div className="observation-system-status">
+                <span
+                  className="observation-system-status-dot"
+                  aria-hidden="true"
+                />
+                <span>
+                  <small>系统状态</small>
+                  <strong>正常运行</strong>
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => void loadData(true)}
+                disabled={isRefreshing}
+                aria-label="刷新观测数据"
+                title="刷新观测数据"
+                className="observation-icon-button"
+              >
+                <RefreshCw
+                  className={`size-4 ${isRefreshing ? "animate-spin" : ""}`}
+                />
+              </button>
+              <CircleUserRound
+                className="observation-user-mark"
+                aria-hidden="true"
+              />
+            </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-4 p-6 sm:grid-cols-4">
-            <TaskStatistic
-              label="等待"
-              value={
-                summary.pendingTasks
-              }
-            />
+          {errorMessage && (
+            <div className="observation-alert" role="alert">
+              <TriangleAlert className="mt-0.5 size-4 shrink-0" />
+              <div>
+                <p className="font-medium">本次同步未完成</p>
+                <p className="mt-1 text-sm">
+                  {errorMessage}。当前页面保留上一次成功读数。
+                </p>
+              </div>
+            </div>
+          )}
 
-            <TaskStatistic
-              label="分析中"
-              value={
-                summary.processingTasks
-              }
-            />
-
-            <TaskStatistic
-              label="已完成"
-              value={
-                summary.completedTasks
-              }
-            />
-
-            <TaskStatistic
-              label="失败"
-              value={
-                summary.failedTasks
-              }
-            />
-          </div>
-        </section>
-      </div>
-
-      {/* 最新结果 */}
-      <section className="rounded-xl border">
-        <div className="flex items-center justify-between border-b p-6">
-          <div>
-            <h2 className="text-lg font-semibold">
-              最新蜂群分析
-            </h2>
-
-            <p className="text-sm text-muted-foreground">
-              最近一次完成的行为分析结果
-            </p>
-          </div>
-
-          <Link
-            to="/results"
-            className="flex items-center gap-1 text-sm text-muted-foreground transition hover:text-foreground"
+          <div
+            className="observation-hero-surface"
+            data-observation-mount="hero"
           >
-            全部结果
-            <ArrowUpRight className="size-4" />
-          </Link>
-        </div>
-
-        {!latestResult ? (
-          <div className="flex h-48 items-center justify-center">
-            <div className="text-center text-muted-foreground">
-              <FileVideo className="mx-auto mb-3 size-8" />
-
-              <p>暂无分析结果</p>
-            </div>
-          </div>
-        ) : (
-          <div className="grid gap-4 p-6 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
-            <ResultStatistic
-              label="检测个体"
-              value={
-                latestResult.detected_individuals
-              }
-            />
-
-            <ResultStatistic
-              label="有效轨迹"
-              value={
-                latestResult.valid_tracks
-              }
-            />
-
-            <ResultStatistic
-              label="进巢"
-              value={
-                latestResult.entry_count
-              }
-            />
-
-            <ResultStatistic
-              label="出巢"
-              value={
-                latestResult.exit_count
-              }
-            />
-
-            <ResultStatistic
-              label="平均速度"
-              value={
-                latestResult.average_speed ??
-                "-"
-              }
-            />
-
-            <ResultStatistic
-              label="活动指数"
-              value={
-                latestResult.activity_index ??
-                "-"
-              }
-            />
-
-            <ResultStatistic
-              label="异常事件"
-              value={
-                latestResult.abnormal_event_count
-              }
-            />
-          </div>
-        )}
-      </section>
-
-      {/* 最近任务 */}
-      <section className="rounded-xl border">
-        <div className="flex items-center justify-between border-b p-6">
-          <div>
-            <h2 className="text-lg font-semibold">
-              最近分析任务
-            </h2>
-
-            <p className="text-sm text-muted-foreground">
-              显示最近提交的分析任务
-            </p>
-          </div>
-
-          <Link
-            to="/tasks"
-            className="flex items-center gap-1 text-sm text-muted-foreground transition hover:text-foreground"
-          >
-            查看全部
-            <ArrowUpRight className="size-4" />
-          </Link>
-        </div>
-
-        {recentTasks.length === 0 ? (
-          <div className="flex h-48 items-center justify-center">
-            <div className="text-center text-muted-foreground">
-              <Clock3 className="mx-auto mb-3 size-8" />
-
-              <p>暂无分析任务</p>
-            </div>
-          </div>
-        ) : (
-          <div className="divide-y">
-            {recentTasks.map(
-              (task) => {
-                const video =
-                  videoMap.get(
-                    task.video_id,
-                  )
-
-                return (
-                  <div
-                    key={task.id}
-                    className="flex flex-wrap items-center justify-between gap-4 px-6 py-4"
+            <div className="observation-hero-grid">
+              <div
+                className="observation-state-block"
+                data-state={colonyState.tone}
+              >
+                <div className="observation-state-heading">
+                  <p className="observation-kicker">今日蜂群状态</p>
+                  <span
+                    className="observation-state-status"
+                    data-state={colonyState.tone}
                   >
-                    <div className="flex min-w-0 items-center gap-3">
-                      <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-muted">
-                        <FileVideo className="size-4" />
-                      </div>
+                    <span aria-hidden="true" />
+                    {colonyState.tone === "attention" ? "需关注" : "稳定观察"}
+                  </span>
+                </div>
+                <h1 id="today-title" className="observation-state-title">
+                  {colonyState.label}
+                </h1>
+                <p className="observation-state-note">{colonyState.note}</p>
+                <p className="observation-sync">
+                  <span className="observation-live-dot" aria-hidden="true" />
+                  最近更新
+                  <time className="observation-data tabular-nums">
+                    {formatObservationTime(latestObservationAt)}
+                  </time>
+                </p>
+                <ObservationVideoPreview
+                  video={latestVideo}
+                  displayId={
+                    latestVideo
+                      ? formatEvidenceId("V", latestVideo.id)
+                      : "V•---"
+                  }
+                  sceneLabel={
+                    latestVideo
+                      ? getSceneMeta(latestVideo.scene_type).label
+                      : "观测样本"
+                  }
+                  secondaryLabel={
+                    latestVideo
+                      ? formatEvidenceTime(latestVideo.created_at)
+                      : undefined
+                  }
+                />
+              </div>
 
-                      <div className="min-w-0">
-                        <p className="max-w-80 truncate font-medium">
-                          {video?.original_filename ??
-                            "未知视频"}
-                        </p>
-
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          {task.model_name ??
-                            "baseline-v1"}
-                          {" · "}
-                          {formatDate(
-                            task.created_at,
-                          )}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-4">
-                      <TaskStatusBadge
-                        status={
-                          task.status
-                        }
-                      />
-
-                      <span className="w-12 text-right text-sm font-medium">
-                        {task.progress}%
+              <div className="observation-summary-field">
+                <div className="observation-summary-heading">
+                  <p className="observation-summary-question">
+                    今天这群蜂
+                    <br />
+                    发生了什么？
+                  </p>
+                  <div className="observation-summary-code-group">
+                    <span className="observation-summary-code observation-data">
+                      {latestResult
+                        ? formatEvidenceId("A", latestResult.id)
+                        : "A•---"}
+                    </span>
+                    {latestVideo ? (
+                      <Link
+                        to="/videos/$videoId"
+                        params={{ videoId: latestVideo.id }}
+                        className="observation-summary-source observation-data"
+                      >
+                        当前观测 · {formatEvidenceId("V", latestVideo.id)}
+                      </Link>
+                    ) : (
+                      <span className="observation-summary-source">
+                        当前活动观测
                       </span>
-                    </div>
+                    )}
                   </div>
-                )
-              },
-            )}
+                </div>
+                <div className="observation-summary-answer">
+                  {latestResult
+                    ? getSummarySentence(latestResult)
+                    : "观察样本正在汇集，活动读数形成后将在这里给出今日摘要。"}
+                </div>
+                <p className="observation-summary-relation">
+                  {analysisMatchesLatestVideo
+                    ? "RAW OBSERVATION → ANALYSIS READING"
+                    : "当前活动观测，等待对应分析记录"}
+                </p>
+                <ObservationReading
+                  result={latestResult}
+                  resultCount={results.length}
+                />
+              </div>
+            </div>
+
+            <section
+              className="observation-metric-band"
+              aria-label="今日观测摘要"
+              data-observation-mount="metrics"
+            >
+              <ObservationMetric
+                label="活动指数"
+                value={formatMetric(latestResult?.activity_index)}
+                note="群体活动强度"
+                tone="honey"
+              />
+              <ObservationMetric
+                label="进巢"
+                value={latestResult ? `${latestResult.entry_count}` : "-"}
+                unit="次"
+                note="最近样本"
+                tone="honey"
+              />
+              <ObservationMetric
+                label="出巢"
+                value={latestResult ? `${latestResult.exit_count}` : "-"}
+                unit="次"
+                note="最近样本"
+                tone="blue"
+              />
+              <ObservationMetric
+                label="异常记录"
+                value={
+                  latestResult ? `${latestResult.abnormal_event_count}` : "-"
+                }
+                unit="次"
+                note="需要复核"
+                tone={latestResult?.abnormal_event_count ? "alert" : "sage"}
+              />
+              <Link to="/results" className="observation-metric-link">
+                查看完整分析
+                <ArrowRight className="size-4" />
+              </Link>
+            </section>
           </div>
-        )}
+
+          <a
+            href="#analysis-deck"
+            className="observation-hero-rail"
+            data-observation-reveal
+            data-observation-delay="4"
+            aria-label="向下探索蜂群观测工作台"
+          >
+            <span className="observation-rail-index observation-data">
+              01 / 04
+            </span>
+            <span className="observation-rail-rule" />
+            <span className="observation-rail-label">
+              Colony Pulse · 蜂群活动节律
+            </span>
+            <ChevronDown className="size-4" />
+            <span className="observation-rail-hint">向下探索观测模块</span>
+          </a>
+        </ResearchContentFrame>
       </section>
 
-      {/* 平台能力 */}
-      <section className="rounded-xl border p-6">
-        <h2 className="text-lg font-semibold">
-          系统能力
-        </h2>
+      <section
+        className="analysis-deck-section observation-flow-section"
+        id="analysis-deck"
+        aria-labelledby="analysis-deck-title"
+      >
+        <ResearchContentFrame
+          size="workspace"
+          density="balanced"
+          className="observation-shell analysis-instrument-deck"
+          data-observation-reveal="analysis-deck"
+        >
+          <header className="analysis-deck-header">
+            <div>
+              <p className="observation-kicker">Bee observation deck</p>
+              <h2 id="analysis-deck-title" className="analysis-deck-title">
+                蜂群观测工作台
+              </h2>
+            </div>
+            <div
+              className="analysis-deck-index observation-data"
+              aria-hidden="true"
+            >
+              <span>02</span>
+              <span>活动节律</span>
+              <span>03</span>
+              <span>巢门流动</span>
+              <span>04</span>
+              <span>证据链</span>
+            </div>
+          </header>
 
-        <p className="mt-1 text-sm text-muted-foreground">
-          当前平台已完成视频、任务与结果数据闭环
-        </p>
+          <div className="analysis-deck-grid">
+            <div
+              className="analysis-zone analysis-zone--colony"
+              data-zone="colony"
+              data-observation-reveal="colony"
+              data-observation-delay="1"
+            >
+              <BeePulseChart results={results} compact />
+            </div>
+            <div
+              className="analysis-zone analysis-zone--hive"
+              data-zone="hive"
+              data-observation-reveal="hive"
+              data-observation-delay="2"
+            >
+              <HiveGateFlow
+                entryCount={latestResult?.entry_count ?? 0}
+                exitCount={latestResult?.exit_count ?? 0}
+                observedAt={latestResult?.created_at ?? null}
+                hasData={latestResult !== null}
+              />
+            </div>
+            <div
+              className="analysis-zone analysis-zone--evidence"
+              data-zone="evidence"
+              data-observation-reveal="evidence"
+              data-observation-delay="3"
+            >
+              <div className="analysis-zone-heading">
+                <p className="observation-kicker">Evidence chain</p>
+                <h3 className="analysis-zone-title">观测状态</h3>
+                <p className="analysis-zone-note">
+                  从观察样本到分析结果，确认读数完整可追溯。
+                </p>
+              </div>
+              <EvidenceChain videos={videos} tasks={tasks} results={results} />
+            </div>
+          </div>
+        </ResearchContentFrame>
+      </section>
 
-        <div className="mt-6 grid gap-4 md:grid-cols-3">
-          <CapabilityCard
-            title="视频数据管理"
-            description="支持巢外可见光与巢内红外监测视频统一管理。"
-            icon={
-              <Video className="size-5" />
-            }
-          />
+      <section
+        className="observation-log-section"
+        aria-labelledby="recent-observations-title"
+      >
+        <ResearchContentFrame
+          size="workspace"
+          density="balanced"
+          className="observation-shell"
+        >
+          <div className="observation-log-header" data-observation-reveal>
+            <div>
+              <p className="observation-kicker text-[var(--obs-blue)]">
+                近期田野与巢内样本
+              </p>
+              <h2
+                id="recent-observations-title"
+                className="observation-section-title"
+              >
+                最近观测记录
+              </h2>
+            </div>
+            <nav aria-label="观测记录入口" className="observation-page-links">
+              <PageLink to="/videos">全部档案</PageLink>
+              <PageLink to="/tasks">任务记录</PageLink>
+              <PageLink to="/results">分析结果</PageLink>
+            </nav>
+          </div>
 
-          <CapabilityCard
-            title="分析任务调度"
-            description="支持任务创建、进度反馈、状态管理与历史追溯。"
-            icon={
-              <Activity className="size-5" />
-            }
-          />
+          {observationRecords.length === 0 ? (
+            <div className="observation-empty" data-observation-reveal>
+              <FileVideo className="size-6" />
+              <div>
+                <p className="font-medium">尚无观测记录</p>
+                <p className="mt-1 text-sm observation-muted">
+                  建立巢内或巢外观测记录后，样本会按时间出现在这里。
+                </p>
+              </div>
+              <PageLink to="/videos">建立观测记录</PageLink>
+            </div>
+          ) : (
+            <div className="observation-records" data-observation-reveal>
+              {observationRecords.map((record) => (
+                <ObservationRow key={record.video.id} record={record} />
+              ))}
+            </div>
+          )}
+        </ResearchContentFrame>
+      </section>
+    </main>
+  )
+}
 
-          <CapabilityCard
-            title="行为结果量化"
-            description="形成检测、轨迹、进出巢、活动指数及异常事件等指标。"
-            icon={
-              <CheckCircle2 className="size-5" />
-            }
-          />
+function DashboardLoading() {
+  return (
+    <main className="observation-page" data-route-loading-skeleton="">
+      <ResearchContentFrame
+        size="workspace"
+        density="balanced"
+        className="observation-shell py-8 md:py-12"
+        aria-live="polite"
+        aria-busy="true"
+      >
+        <div className="observation-topline" aria-hidden="true">
+          <span className="research-skeleton is-short" />
+          <span className="research-skeleton is-medium" />
+          <span className="research-skeleton is-short" />
         </div>
-      </section>
+        <div className="observation-hero-surface mt-8" aria-hidden="true">
+          <div className="observation-hero-grid">
+            <div className="grid content-start gap-5 p-6 md:p-10">
+              <span className="research-skeleton is-short" />
+              <span className="research-skeleton h-12 is-medium" />
+              <span className="research-skeleton is-wide" />
+              <span className="research-skeleton mt-8 h-48 is-wide" />
+            </div>
+            <div className="grid content-start gap-6 p-6 md:p-10">
+              <span className="research-skeleton is-medium" />
+              <span className="research-skeleton h-16 is-wide" />
+              <span className="research-skeleton is-wide" />
+              <span className="research-skeleton h-28 is-wide" />
+            </div>
+          </div>
+        </div>
+        <div className="research-loading-copy mt-6">
+          <LoaderCircle className="size-4 animate-spin" />
+          正在读取蜂群观测记录...
+        </div>
+      </ResearchContentFrame>
+    </main>
+  )
+}
+
+function ObservationMetric({
+  label,
+  value,
+  unit,
+  note,
+  tone,
+}: {
+  label: string
+  value: string
+  unit?: string
+  note: string
+  tone: "honey" | "leaf" | "blue" | "sage" | "alert"
+}) {
+  return (
+    <div className="observation-metric" data-tone={tone}>
+      <p className="observation-metric-label">{label}</p>
+      <p className="observation-metric-value">
+        {value}
+        {unit && <span>{unit}</span>}
+      </p>
+      <p className="observation-metric-note">{note}</p>
     </div>
   )
 }
 
-function DashboardMetricCard({
-  title,
-  value,
-  unit,
-  description,
-  icon,
-  href,
+function ObservationReading({
+  result,
+  resultCount,
 }: {
-  title: string
-  value: number
-  unit: string
-  description: string
-  icon: ReactNode
-  href:
-    | "/videos"
-    | "/tasks"
-    | "/results"
+  result: AnalysisResultItem | null
+  resultCount: number
+}) {
+  const value = result?.activity_index ?? null
+  const markerPosition =
+    value === null ? undefined : `${Math.max(0, Math.min(1, value)) * 100}%`
+
+  return (
+    <fieldset className="observation-reading" aria-label="当前活动观测">
+      <legend className="sr-only">当前活动观测</legend>
+      <div className="observation-reading-value">
+        <span>当前活动观测</span>
+        <strong className="observation-data tabular-nums">
+          {formatMetric(value)}
+        </strong>
+        <small>0–1 群体活动强度</small>
+      </div>
+      <div className="observation-reading-scale">
+        <div className="observation-reading-range">
+          <span>正常活动区间 0.35–0.75</span>
+        </div>
+        {markerPosition && (
+          <span
+            className="observation-reading-marker"
+            style={{ left: markerPosition }}
+            aria-hidden="true"
+          />
+        )}
+        <div className="observation-reading-axis observation-data tabular-nums">
+          <span>0.00</span>
+          <span>1.00</span>
+        </div>
+      </div>
+      <dl className="observation-reading-meta">
+        <div>
+          <dt>分析记录</dt>
+          <dd className="observation-data">
+            {result ? formatEvidenceId("A", result.id) : "待记录"}
+          </dd>
+        </div>
+        <div>
+          <dt>观测时间</dt>
+          <dd className="observation-data tabular-nums">
+            {result ? formatEvidenceTime(result.created_at) : "待记录"}
+          </dd>
+        </div>
+        <div>
+          <dt>有效结果</dt>
+          <dd className="observation-data tabular-nums">{resultCount} 条</dd>
+        </div>
+      </dl>
+    </fieldset>
+  )
+}
+
+function PageLink({
+  to,
+  children,
+}: {
+  to: "/videos" | "/tasks" | "/results"
+  children: string
 }) {
   return (
-    <Link
-      to={href}
-      className="group rounded-xl border p-5 transition hover:bg-muted/30"
-    >
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-sm text-muted-foreground">
-            {title}
-          </p>
-
-          <div className="mt-2 flex items-end gap-1.5">
-            <span className="text-3xl font-semibold">
-              {value}
-            </span>
-
-            <span className="pb-1 text-xs text-muted-foreground">
-              {unit}
-            </span>
-          </div>
-        </div>
-
-        <div className="flex size-10 items-center justify-center rounded-lg bg-muted">
-          {icon}
-        </div>
-      </div>
-
-      <div className="mt-4 flex items-center justify-between">
-        <p className="text-xs text-muted-foreground">
-          {description}
-        </p>
-
-        <ArrowUpRight className="size-4 opacity-0 transition group-hover:opacity-100" />
-      </div>
+    <Link to={to} className="observation-page-link">
+      {children}
+      <ArrowUpRight className="size-3.5" />
     </Link>
   )
 }
 
-function SceneCard({
-  title,
-  description,
-  count,
-  total,
+function EvidenceChain({
+  videos,
+  tasks,
+  results,
 }: {
-  title: string
-  description: string
-  count: number
-  total: number
+  videos: VideoItem[]
+  tasks: AnalysisTaskItem[]
+  results: AnalysisResultItem[]
 }) {
-  const percentage =
-    total > 0
-      ? (count / total) * 100
-      : 0
+  const latestResult = [...results].sort(sortNewestFirst)[0] ?? null
+  const latestTask = [...tasks].sort(sortNewestFirst)[0] ?? null
+  const latestVideo = [...videos].sort(sortNewestFirst)[0] ?? null
+  const task = latestResult
+    ? (tasks.find(
+        (candidate) =>
+          candidate.id === latestResult.task_id ||
+          candidate.video_id === latestResult.video_id,
+      ) ?? latestTask)
+    : latestTask
+  const video = latestResult
+    ? (videos.find((candidate) => candidate.id === latestResult.video_id) ??
+      (task
+        ? videos.find((candidate) => candidate.id === task.video_id)
+        : null) ??
+      latestVideo)
+    : task
+      ? (videos.find((candidate) => candidate.id === task.video_id) ??
+        latestVideo)
+      : latestVideo
+  const result = latestResult
 
   return (
-    <div className="rounded-xl bg-muted/30 p-5">
-      <p className="font-medium">
-        {title}
-      </p>
-
-      <p className="mt-1 text-xs text-muted-foreground">
-        {description}
-      </p>
-
-      <div className="mt-5 flex items-end gap-2">
-        <span className="text-3xl font-semibold">
-          {count}
-        </span>
-
-        <span className="pb-1 text-sm text-muted-foreground">
-          个视频
-        </span>
-      </div>
-
-      <div className="mt-4 h-2 overflow-hidden rounded-full bg-muted">
-        <div
-          className="h-full rounded-full bg-amber-500"
-          style={{
-            width: `${percentage}%`,
-          }}
-        />
-      </div>
-
-      <p className="mt-2 text-xs text-muted-foreground">
-        占全部视频{" "}
-        {percentage.toFixed(1)}%
-      </p>
+    <div className="observation-evidence-track">
+      <EvidenceStep
+        to="/videos"
+        code={video ? formatEvidenceId("V", video.id) : "V•---"}
+        label="观测样本"
+        status={video ? getVideoEvidenceStatus(video.status) : "尚未建立"}
+        time={video ? formatEvidenceTime(video.created_at) : "待记录"}
+        review={video ? "可复核" : "不可复核"}
+        state={video ? "ready" : "waiting"}
+      />
+      <EvidenceStep
+        to="/tasks"
+        code={task ? formatEvidenceId("A", task.id) : "A•---"}
+        label="分析记录"
+        status={task ? getTaskEvidenceStatus(task.status) : "尚未建立"}
+        time={task ? formatEvidenceTime(task.created_at) : "待记录"}
+        review={task ? "可追溯" : "不可复核"}
+        state={
+          task?.status === "FAILED" ? "attention" : task ? "ready" : "waiting"
+        }
+      />
+      <EvidenceStep
+        to="/results"
+        code={result ? formatEvidenceId("R", result.id) : "R•---"}
+        label="行为结果"
+        status={result ? "结果已形成" : "等待分析结果"}
+        time={result ? formatEvidenceTime(result.created_at) : "待记录"}
+        review={result ? "可复核" : "不可复核"}
+        state={result ? "ready" : "waiting"}
+      />
     </div>
   )
 }
 
-function TaskStatistic({
+function EvidenceStep({
+  to,
+  code,
   label,
-  value,
-}: {
-  label: string
-  value: number
-}) {
-  return (
-    <div className="rounded-xl bg-muted/30 p-4 text-center">
-      <p className="text-2xl font-semibold">
-        {value}
-      </p>
-
-      <p className="mt-1 text-xs text-muted-foreground">
-        {label}
-      </p>
-    </div>
-  )
-}
-
-function ResultStatistic({
-  label,
-  value,
-}: {
-  label: string
-  value: number | string
-}) {
-  return (
-    <div className="rounded-xl bg-muted/30 p-4">
-      <p className="text-xs text-muted-foreground">
-        {label}
-      </p>
-
-      <p className="mt-2 text-2xl font-semibold">
-        {value}
-      </p>
-    </div>
-  )
-}
-
-function CapabilityCard({
-  title,
-  description,
-  icon,
-}: {
-  title: string
-  description: string
-  icon: ReactNode
-}) {
-  return (
-    <div className="rounded-xl bg-muted/30 p-5">
-      <div className="flex size-10 items-center justify-center rounded-lg bg-background">
-        {icon}
-      </div>
-
-      <p className="mt-4 font-medium">
-        {title}
-      </p>
-
-      <p className="mt-2 text-sm leading-6 text-muted-foreground">
-        {description}
-      </p>
-    </div>
-  )
-}
-
-function TaskStatusBadge({
   status,
+  time,
+  review,
+  state,
 }: {
+  to: "/videos" | "/tasks" | "/results"
+  code: string
+  label: string
   status: string
+  time: string
+  review: string
+  state: "ready" | "waiting" | "attention"
 }) {
-  const labels: Record<
-    string,
-    string
-  > = {
+  return (
+    <Link to={to} className="observation-evidence-step" data-state={state}>
+      <span className="observation-evidence-node" aria-hidden="true">
+        {code.slice(0, 1)}
+      </span>
+      <span className="observation-evidence-copy">
+        <span className="observation-evidence-label">{label}</span>
+        <strong className="observation-data">{code}</strong>
+        <span className="observation-evidence-status">{status}</span>
+        <span className="observation-evidence-meta">
+          <time className="observation-data tabular-nums">{time}</time>
+          <span aria-hidden="true">·</span>
+          <span>{review}</span>
+        </span>
+      </span>
+      <ArrowUpRight className="observation-evidence-arrow size-4" />
+    </Link>
+  )
+}
+
+function getVideoEvidenceStatus(status: string) {
+  const labels: Record<string, string> = {
+    UPLOADED: "已归档",
     PENDING: "等待分析",
-    PROCESSING: "分析中",
-    COMPLETED: "已完成",
-    FAILED: "失败",
+    PROCESSING: "处理中",
+    COMPLETED: "分析完成",
+    FAILED: "归档异常",
   }
+  return labels[status] ?? status
+}
 
-  const styles: Record<
-    string,
-    string
-  > = {
-    PENDING:
-      "bg-amber-500/10 text-amber-600",
-
-    PROCESSING:
-      "bg-purple-500/10 text-purple-600",
-
-    COMPLETED:
-      "bg-green-500/10 text-green-600",
-
-    FAILED:
-      "bg-red-500/10 text-red-600",
+function getTaskEvidenceStatus(status: string) {
+  const labels: Record<string, string> = {
+    PENDING: "等待分析",
+    PROCESSING: "轨迹提取中",
+    COMPLETED: "分析完成",
+    FAILED: "分析失败",
   }
+  return labels[status] ?? status
+}
+
+function formatEvidenceTime(value: string | null) {
+  if (!value) return "时间未记录"
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return "时间未记录"
+  return date.toLocaleString("zh-CN", {
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  })
+}
+
+function ObservationRow({ record }: { record: ObservationRecord }) {
+  const { video, task, result } = record
+  const scene = getSceneMeta(video.scene_type)
 
   return (
-    <span
-      className={`rounded-full px-2.5 py-1 text-xs font-medium ${
-        styles[status] ??
-        "bg-muted text-muted-foreground"
-      }`}
-    >
-      {labels[status] ?? status}
+    <article className="observation-record">
+      <div className="min-w-0">
+        <div className="observation-record-meta">
+          <span className="observation-scene-mark" data-scene={scene.tone} />
+          <span>{scene.label}</span>
+          <span aria-hidden="true">·</span>
+          <time className="observation-data tabular-nums">
+            {formatDate(video.created_at)}
+          </time>
+        </div>
+        <p className="observation-record-title">
+          {formatEvidenceId("V", video.id)} · {scene.label}
+        </p>
+        <p
+          className="observation-record-filename"
+          title={video.original_filename}
+        >
+          原始文件 · {video.original_filename}
+        </p>
+      </div>
+      <div>
+        <p className="observation-record-label">处理状态</p>
+        <TaskState status={task?.status ?? null} />
+        {task?.status === "PROCESSING" && (
+          <span className="observation-data ml-2 observation-muted">
+            {Math.round(task.progress)}%
+          </span>
+        )}
+      </div>
+      <div>
+        <p className="observation-record-label">观测摘要</p>
+        <p className="mt-1 text-sm tabular-nums">
+          {result
+            ? `${result.detected_individuals} 只次 · 进 ${result.entry_count} / 出 ${result.exit_count}`
+            : "等待形成分析读数"}
+        </p>
+      </div>
+      <Link
+        to="/videos/$videoId"
+        params={{ videoId: video.id }}
+        aria-label={`查看观测样本：${video.original_filename}`}
+        title="查看观测样本"
+        className="observation-record-link"
+      >
+        <ArrowUpRight className="size-4" />
+      </Link>
+    </article>
+  )
+}
+
+function TaskState({ status }: { status: string | null }) {
+  const states: Record<string, { label: string; tone: string }> = {
+    PENDING: { label: "等待分析", tone: "waiting" },
+    PROCESSING: { label: "轨迹提取中", tone: "processing" },
+    COMPLETED: { label: "分析完成", tone: "ready" },
+    FAILED: { label: "分析失败", tone: "attention" },
+  }
+  const state = status ? states[status] : undefined
+
+  return (
+    <span className="observation-task-state" data-state={state?.tone ?? "idle"}>
+      <span aria-hidden="true" />
+      {state?.label ?? "尚未提交分析"}
     </span>
   )
 }
 
-function formatDate(
-  value: string | null,
+function getColonyState(
+  result: AnalysisResultItem | null,
+  videoCount: number,
+  processingCount: number,
+  pendingCount: number,
+  failedCount: number,
 ) {
-  if (!value) {
-    return "-"
+  if (!result) {
+    return {
+      label: videoCount > 0 ? "等待形成读数" : "等待观测样本",
+      tone: "observe",
+      note:
+        processingCount > 0
+          ? `${processingCount} 项任务正在提取行为轨迹。`
+          : pendingCount > 0
+            ? `${pendingCount} 项观察样本正在等待分析。`
+            : "建立巢内或巢外观测记录后，即可开始记录蜂群活动节律。",
+    }
   }
+  if (result.abnormal_event_count > 0 || failedCount > 0) {
+    return {
+      label: "存在关注记录",
+      tone: "attention",
+      note: `最近样本关联 ${result.abnormal_event_count} 次异常记录，请结合原始视频与分析结果复核。`,
+    }
+  }
+  if ((result.activity_index ?? 0) >= 0.65) {
+    return {
+      label: "稳定活跃",
+      tone: "stable",
+      note: "最近一次观测位于较活跃区间，巢门流动与活动节律已同步记录。",
+    }
+  }
+  if ((result.activity_index ?? 0) >= 0.35) {
+    return {
+      label: "活动平稳",
+      tone: "stable",
+      note: "最近一次观测处于正常活动区间，可继续结合时序变化观察蜂群节律。",
+    }
+  }
+  return {
+    label: "低活动",
+    tone: "observe",
+    note: "最近一次活动指数低于正常区间，建议结合观测时间与原始视频继续判断。",
+  }
+}
 
+function getSummarySentence(result: AnalysisResultItem) {
+  const net = result.entry_count - result.exit_count
+  const flow =
+    net > 0
+      ? `进巢比出巢多 ${net} 次`
+      : net < 0
+        ? `出巢比进巢多 ${Math.abs(net)} 次`
+        : "进出巢保持平衡"
+  const activity =
+    (result.activity_index ?? 0) >= 0.65
+      ? "活动处于较活跃区间"
+      : (result.activity_index ?? 0) >= 0.35
+        ? "活动节律平稳"
+        : "活动强度偏低"
+  const abnormal =
+    result.abnormal_event_count > 0
+      ? `，有 ${result.abnormal_event_count} 条记录需要复核`
+      : "，未见异常记录"
+  return `${activity}，${flow}${abnormal}。`
+}
+
+function sortNewestFirst(
+  a: { created_at: string | null },
+  b: { created_at: string | null },
+) {
+  return getTimestamp(b.created_at) - getTimestamp(a.created_at)
+}
+
+function getTimestamp(value: string | null) {
+  if (!value) return 0
+  const timestamp = new Date(value).getTime()
+  return Number.isFinite(timestamp) ? timestamp : 0
+}
+
+function getSceneMeta(sceneType: string) {
+  if (sceneType === "OUTDOOR") return { label: "巢外可见光", tone: "outdoor" }
+  if (sceneType === "INDOOR") return { label: "巢内红外", tone: "indoor" }
+  return { label: sceneType, tone: "unknown" }
+}
+
+function formatMetric(value: number | null | undefined) {
+  return value === null || value === undefined ? "-" : value.toFixed(2)
+}
+
+function formatDate(value: string | null) {
+  if (!value) return "时间未记录"
   const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  return date.toLocaleString("zh-CN", {
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  })
+}
 
-  if (
-    Number.isNaN(
-      date.getTime(),
-    )
-  ) {
-    return value
-  }
+function formatObservationTime(value: Date | null) {
+  if (!value) return "尚无记录"
+  return value.toLocaleString("zh-CN", {
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  })
+}
 
-  return date.toLocaleString("zh-CN")
+function formatLongDate(value: Date) {
+  return value.toLocaleDateString("zh-CN", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    weekday: "short",
+  })
 }

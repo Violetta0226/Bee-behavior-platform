@@ -1,0 +1,211 @@
+{
+  "phase": "before",
+  "baseURL": "http://localhost:8000",
+  "viewport": {
+    "width": 1914,
+    "height": 960
+  },
+  "deviceScaleFactor": 1,
+  "browserZoom": 1,
+  "videos": {
+    "url": "http://localhost:8000/videos",
+    "summaryValues": [
+      {
+        "text": "1",
+        "fontSize": 46,
+        "height": 46
+      },
+      {
+        "text": "1",
+        "fontSize": 46,
+        "height": 46
+      },
+      {
+        "text": "0",
+        "fontSize": 46,
+        "height": 46
+      },
+      {
+        "text": "0",
+        "fontSize": 46,
+        "height": 46
+      },
+      {
+        "text": "1",
+        "fontSize": 46,
+        "height": 46
+      }
+    ],
+    "largeKpiCount": 5,
+    "visibleSummaryCount": 5
+  },
+  "sidebar": {
+    "text": "巢影蜂析\n\n智慧蜂群行为分析平台\n\n综合态势\n观测档案\n分析任务\n分析结果\n个体追踪\n群体行为\n异常监测\n数据与报告\n系统管理\nAppearance\nToggle theme\nU\n\nadmin@example.com",
+    "hasAppearanceEnglish": true,
+    "hasAppearanceChinese": false,
+    "titledTexts": [],
+    "accountEmailMatches": 0
+  },
+  "tasks": {
+    "url": "http://localhost:8000/tasks",
+    "typedNodeCount": 0,
+    "nodeStyles": [
+      {
+        "className": "",
+        "role": null,
+        "width": 14,
+        "height": 14,
+        "borderRadius": "50%",
+        "transform": "none",
+        "backgroundColor": "color(srgb 0.495922 0.535843 0.483922)"
+      },
+      {
+        "className": "",
+        "role": null,
+        "width": 14,
+        "height": 14,
+        "borderRadius": "50%",
+        "transform": "none",
+        "backgroundColor": "color(srgb 0.495922 0.535843 0.483922)"
+      },
+      {
+        "className": "",
+        "role": null,
+        "width": 14,
+        "height": 14,
+        "borderRadius": "50%",
+        "transform": "none",
+        "backgroundColor": "color(srgb 0.495922 0.535843 0.483922)"
+      }
+    ],
+    "distinctNodeRoles": [
+      null
+    ],
+    "taskHref": "/tasks/a4ae8ff5-fec4-4a04-97c0-2114e2395264"
+  },
+  "taskDetail": {
+    "url": "http://localhost:8000/tasks/a4ae8ff5-fec4-4a04-97c0-2114e2395264",
+    "headings": [
+      "任务详情",
+      "任务信息",
+      "关联分析结果"
+    ],
+    "hasProcessInspector": false,
+    "hasReadingGrid": false,
+    "links": [
+      {
+        "text": "综合态势",
+        "href": "/"
+      },
+      {
+        "text": "观测档案",
+        "href": "/videos"
+      },
+      {
+        "text": "分析任务",
+        "href": "/tasks"
+      },
+      {
+        "text": "分析结果",
+        "href": "/results"
+      },
+      {
+        "text": "个体追踪",
+        "href": "/tracking"
+      },
+      {
+        "text": "群体行为",
+        "href": "/behavior"
+      },
+      {
+        "text": "异常监测",
+        "href": "/alerts"
+      },
+      {
+        "text": "数据与报告",
+        "href": "/reports"
+      },
+      {
+        "text": "系统管理",
+        "href": "/admin"
+      },
+      {
+        "text": "返回分析任务",
+        "href": "/tasks"
+      },
+      {
+        "text": "查看完整结果",
+        "href": "/results?task_id=a4ae8ff5-fec4-4a04-97c0-2114e2395264"
+      },
+      {
+        "text": "查看视频详情",
+        "href": "/videos/dedc438e-1bbc-4d6d-b554-1d104bad5562"
+      }
+    ]
+  },
+  "results": {
+    "url": "http://localhost:8000/results",
+    "scrollY": 0,
+    "entryText": "32",
+    "gateText": "巢门",
+    "exitText": "29",
+    "entry": {
+      "x": 307.859375,
+      "y": 1076.21875,
+      "width": 139.96875,
+      "height": 46,
+      "bottom": 1122.21875,
+      "visibleInViewport": false
+    },
+    "gate": {
+      "x": 773.2890625,
+      "y": 996.9046630859375,
+      "width": 33.3125,
+      "height": 21.38909912109375,
+      "bottom": 1018.2937622070312,
+      "visibleInViewport": false
+    },
+    "exit": {
+      "x": 1132.0625,
+      "y": 1076.21875,
+      "width": 139.96875,
+      "height": 46,
+      "bottom": 1122.21875,
+      "visibleInViewport": false
+    },
+    "mainFlows": [
+      {
+        "x": 487.7339782714844,
+        "y": 1023.2074584960938,
+        "width": 290.2819519042969,
+        "height": 50.55316162109375,
+        "bottom": 1073.7606201171875,
+        "visibleInViewport": false
+      },
+      {
+        "x": 801.8746948242188,
+        "y": 1099.0372314453125,
+        "width": 290.28192138671875,
+        "height": 50.55322265625,
+        "bottom": 1149.5904541015625,
+        "visibleInViewport": false
+      }
+    ],
+    "provenance": {
+      "x": 263.0625,
+      "y": 262.390625,
+      "width": 1599.875,
+      "height": 170.703125,
+      "bottom": 433.09375,
+      "visibleInViewport": true
+    },
+    "core": {
+      "x": 263.0625,
+      "y": 660.453125,
+      "width": 1599.859375,
+      "height": 126.984375,
+      "bottom": 787.4375,
+      "visibleInViewport": true
+    }
+  }
+}

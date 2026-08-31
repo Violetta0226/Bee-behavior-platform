@@ -379,6 +379,10 @@ class AnalysisResultPublic(
     task_id: uuid.UUID
     video_id: uuid.UUID
     owner_id: uuid.UUID
+
+    result_video_path: str | None = None
+    result_json_path: str | None = None
+
     created_at: datetime | None = None
 
 
