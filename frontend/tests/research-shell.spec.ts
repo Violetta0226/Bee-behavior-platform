@@ -36,14 +36,13 @@ async function waitForResearchFrame(page: Page) {
 async function findVideoDetailRoute(page: Page) {
   await page.goto("/videos")
   await expect(
-    page.getByRole("heading", { name: "蜂群观测档案" }),
+    page.getByRole("heading", { name: "蜂群观测档案", exact: true }),
   ).toBeVisible()
+  await expect(page.locator(".research-loading-plane")).toHaveCount(0)
 
-  const href = await page
-    .locator('.archive-record-list a[href^="/videos/"]')
-    .first()
-    .getAttribute("href")
-  return href ?? undefined
+  const detailLinks = page.locator('.archive-record-list a[href^="/videos/"]')
+  if ((await detailLinks.count()) === 0) return undefined
+  return (await detailLinks.first().getAttribute("href")) ?? undefined
 }
 
 test("科研页面共享同一 Content Frame 与 Sidebar 坐标", async ({ page }) => {
