@@ -21,20 +21,38 @@ import { type Item, Main } from "./Main"
 import { User } from "./User"
 
 const baseItems: Item[] = [
-  { icon: LayoutDashboard, title: "综合态势", path: "/" },
-  { icon: Video, title: "观测档案", path: "/videos" },
-  { icon: ListTodo, title: "分析任务", path: "/tasks" },
-  { icon: BarChart3, title: "分析结果", path: "/results" },
-  { icon: ScanSearch, title: "个体追踪", path: "/tracking" },
-  { icon: Users, title: "群体行为", path: "/behavior" },
-  { icon: TriangleAlert, title: "异常监测", path: "/alerts" },
-  { icon: FileText, title: "数据与报告", path: "/reports" },
+  { group: "观测", icon: LayoutDashboard, title: "综合态势", path: "/" },
+  { group: "观测", icon: Video, title: "观测档案", path: "/videos" },
+  { group: "分析与证据", icon: ListTodo, title: "分析任务", path: "/tasks" },
+  { group: "分析与证据", icon: BarChart3, title: "分析结果", path: "/results" },
+  {
+    group: "分析与证据",
+    icon: ScanSearch,
+    title: "个体追踪",
+    path: "/tracking",
+  },
+  { group: "分析与证据", icon: Users, title: "群体行为", path: "/behavior" },
+  {
+    group: "分析与证据",
+    icon: TriangleAlert,
+    title: "异常监测",
+    path: "/alerts",
+  },
+  {
+    group: "分析与证据",
+    icon: FileText,
+    title: "数据与报告",
+    path: "/reports",
+  },
 ]
 
 export function AppSidebar() {
   const { user: currentUser } = useAuth()
   const items = currentUser?.is_superuser
-    ? [...baseItems, { icon: Users, title: "系统管理", path: "/admin" }]
+    ? [
+        ...baseItems,
+        { group: "系统", icon: Users, title: "系统管理", path: "/admin" },
+      ]
     : baseItems
   return (
     <Sidebar collapsible="offcanvas" className="observation-sidebar-container">

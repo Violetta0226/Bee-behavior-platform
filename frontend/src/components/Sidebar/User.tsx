@@ -30,10 +30,8 @@ function UserInfo({ fullName, email, isSuperuser }: UserInfoProps) {
 
   return (
     <div className="flex min-w-0 flex-1 items-center gap-2.5">
-      <Avatar className="size-8">
-        <AvatarFallback className="bg-zinc-600 text-white">
-          {getInitials(displayName)}
-        </AvatarFallback>
+      <Avatar className="research-user-avatar size-8">
+        <AvatarFallback>{getInitials(displayName)}</AvatarFallback>
       </Avatar>
       <div className="flex min-w-0 flex-1 flex-col items-start">
         <p className="w-full truncate text-sm font-medium" title={displayName}>
@@ -80,7 +78,10 @@ export function User({ user }: { user: any }) {
                 email={user?.email}
                 isSuperuser={user?.is_superuser}
               />
-              <ChevronsUpDown className="ml-auto size-4 text-muted-foreground" />
+              <ChevronsUpDown
+                className="ml-auto size-4 text-muted-foreground"
+                aria-hidden="true"
+              />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
@@ -99,13 +100,13 @@ export function User({ user }: { user: any }) {
             <DropdownMenuSeparator />
             <RouterLink to="/settings" onClick={handleMenuClick}>
               <DropdownMenuItem>
-                <Settings />
-                User Settings
+                <Settings aria-hidden="true" />
+                账号设置
               </DropdownMenuItem>
             </RouterLink>
             <DropdownMenuItem onClick={handleLogout}>
-              <LogOut />
-              Log Out
+              <LogOut aria-hidden="true" />
+              退出登录
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

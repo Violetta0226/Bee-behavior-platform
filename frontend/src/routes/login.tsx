@@ -85,9 +85,10 @@ function Login() {
                   <FormControl>
                     <Input
                       data-testid="email-input"
-                      placeholder="user@example.com"
+                      placeholder="例如 user@example.com"
                       type="email"
                       autoComplete="email"
+                      spellCheck={false}
                       className="auth-field"
                       {...field}
                     />
@@ -106,7 +107,7 @@ function Login() {
                   <FormControl>
                     <PasswordInput
                       data-testid="password-input"
-                      placeholder="请输入密码"
+                      placeholder="请输入密码…"
                       autoComplete="current-password"
                       className="auth-field"
                       showPasswordLabel="显示密码"

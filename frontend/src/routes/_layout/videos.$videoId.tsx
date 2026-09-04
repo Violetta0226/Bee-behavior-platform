@@ -565,7 +565,7 @@ function ObservationViewport({
         {videoState === "loading" ? (
           <div className="video-detail-media-state" role="status">
             <LoaderCircle className="size-6 animate-spin" aria-hidden="true" />
-            <span>正在读取真实观测画面...</span>
+            <span>正在读取真实观测画面…</span>
           </div>
         ) : videoError ? (
           <div

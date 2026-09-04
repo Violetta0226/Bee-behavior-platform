@@ -49,12 +49,7 @@ export function useResearchReveal(
     const frame = window.requestAnimationFrame(() => {
       for (const target of targets) {
         if (target.classList.contains("is-revealed")) continue
-        if (revealAllOnMount) {
-          reveal(target)
-          continue
-        }
-        const rect = target.getBoundingClientRect()
-        if (rect.top < window.innerHeight * 0.92) reveal(target)
+        if (revealAllOnMount) reveal(target)
         else observer.observe(target)
       }
     })

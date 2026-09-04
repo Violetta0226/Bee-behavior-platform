@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router"
 import { ArrowUpRight, FileVideo, LoaderCircle } from "lucide-react"
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useState } from "react"
 
 import { cn } from "@/lib/utils"
 
@@ -106,38 +106,19 @@ export function ObservationVideoPreview({
   secondaryLabel?: string
   className?: string
 }) {
-  const rootRef = useRef<HTMLAnchorElement>(null)
-  const [isNearViewport, setIsNearViewport] = useState(false)
-  const [mediaError, setMediaError] = useState(false)
-  const [duration, setDuration] = useState<number | null>(null)
-  const preview = useObservationVideoPreview(video, isNearViewport)
-
-  useEffect(() => {
-    setMediaError(false)
-    setDuration(null)
-  }, [])
-
-  useEffect(() => {
-    const target = rootRef.current
-    if (!target) return
-
-    if (!("IntersectionObserver" in window)) {
-      setIsNearViewport(true)
-      return
-    }
-
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry?.isIntersecting) return
-        setIsNearViewport(true)
-        observer.disconnect()
-      },
-      { rootMargin: "180px 0px", threshold: 0.01 },
-    )
-
-    observer.observe(target)
-    return () => observer.disconnect()
-  }, [])
+  const videoId = video?.id
+  const [previewVideoId, setPreviewVideoId] = useState<string | null>(null)
+  const [mediaErrorVideoId, setMediaErrorVideoId] = useState<string | null>(
+    null,
+  )
+  const [duration, setDuration] = useState<{
+    videoId: string
+    value: number
+  } | null>(null)
+  const preview = useObservationVideoPreview(
+    video,
+    Boolean(videoId && previewVideoId === videoId),
+  )
 
   if (!video) {
     return (
@@ -151,16 +132,21 @@ export function ObservationVideoPreview({
     )
   }
 
-  const showVideo = preview.status === "ready" && preview.src && !mediaError
-  const overlayRight = duration ? formatDuration(duration) : secondaryLabel
+  const showVideo =
+    preview.status === "ready" && preview.src && mediaErrorVideoId !== video.id
+  const overlayRight =
+    duration?.videoId === video.id
+      ? formatDuration(duration.value)
+      : secondaryLabel
 
   return (
     <Link
-      ref={rootRef}
       to="/videos/$videoId"
       params={{ videoId: video.id }}
       className={cn("observation-video-preview", className)}
       aria-label={`查看观测样本 ${displayId}：${video.original_filename}`}
+      onPointerEnter={() => setPreviewVideoId(video.id)}
+      onFocus={() => setPreviewVideoId(video.id)}
     >
       {showVideo ? (
         <video
@@ -169,11 +155,11 @@ export function ObservationVideoPreview({
           muted
           playsInline
           preload="metadata"
-          onError={() => setMediaError(true)}
+          onError={() => setMediaErrorVideoId(video.id)}
           onLoadedMetadata={(event) => {
             const media = event.currentTarget
             if (Number.isFinite(media.duration) && media.duration > 0) {
-              setDuration(media.duration)
+              setDuration({ videoId: video.id, value: media.duration })
               media.currentTime = getPreviewSeekTime(media.duration)
             }
           }}
@@ -194,7 +180,7 @@ export function ObservationVideoPreview({
               <span>
                 {preview.status === "error"
                   ? "预览暂不可用"
-                  : "等待读取观测画面"}
+                  : "聚焦读取观测画面"}
               </span>
             </>
           )}

@@ -1,5 +1,5 @@
 import { Activity } from "lucide-react"
-import { useState } from "react"
+import { useMemo, useState } from "react"
 
 type PulseResult = {
   id: string
@@ -43,53 +43,22 @@ export function BeePulseChart({
   compact = false,
 }: BeePulseChartProps) {
   const [activePointId, setActivePointId] = useState<string | null>(null)
-  const innerWidth = CHART.width - CHART.left - CHART.right
-  const innerHeight = CHART.height - CHART.top - CHART.bottom
-  const sourceResults = [...results]
-    .filter((result) => result.activity_index !== null)
-    .sort((a, b) => getTimestamp(a.created_at) - getTimestamp(b.created_at))
-    .slice(-12)
-
-  const points: PulsePoint[] = sourceResults.map((result, index) => {
-    const count = sourceResults.length
-    const x =
-      count === 1
-        ? CHART.left + innerWidth / 2
-        : CHART.left + (index / (count - 1)) * innerWidth
-    const value = Math.max(0, Math.min(1, result.activity_index ?? 0))
-    return {
-      id: result.id,
-      x,
-      y: getY(value, innerHeight),
-      value,
-      time: formatTime(result.created_at),
-      observedAt: result.created_at,
-      entryCount: result.entry_count,
-      exitCount: result.exit_count,
-      abnormalCount: result.abnormal_event_count,
-    }
-  })
-
-  const latestPoint = points.length ? points[points.length - 1] : null
-  const isTimeSeries = points.length >= 4
+  const chartModel = useMemo(() => buildChartModel(results), [results])
+  const {
+    areaPath,
+    averageActivity,
+    innerWidth,
+    isTimeSeries,
+    labelIndexes,
+    latestPoint,
+    linePath,
+    normalBottom,
+    normalTop,
+    points,
+    trend,
+  } = chartModel
   const activePoint =
     points.find((point) => point.id === activePointId) ?? latestPoint
-  const averageActivity = points.length
-    ? points.reduce((sum, point) => sum + point.value, 0) / points.length
-    : null
-  const trend =
-    points.length > 1 && latestPoint
-      ? latestPoint.value - points[0].value
-      : null
-  const normalTop = getY(NORMAL_RANGE.high, innerHeight)
-  const normalBottom = getY(NORMAL_RANGE.low, innerHeight)
-  const linePath = buildLinePath(points)
-  const areaPath = buildAreaPath(points)
-  const labelIndexes = new Set([
-    0,
-    Math.floor((points.length - 1) / 2),
-    points.length - 1,
-  ])
 
   return (
     <div className={`pulse-layout${compact ? " pulse-layout--compact" : ""}`}>
@@ -123,7 +92,7 @@ export function BeePulseChart({
 
       {points.length === 0 ? (
         <div className="pulse-empty">
-          <Activity className="size-6" />
+          <Activity className="size-6" aria-hidden="true" />
           <div>
             <p className="font-medium">尚未形成活动节律</p>
             <p className="mt-1 text-sm observation-muted">
@@ -441,6 +410,61 @@ function ReadingCell({
 
 function getY(value: number, innerHeight: number) {
   return CHART.top + (1 - value) * innerHeight
+}
+
+function buildChartModel(results: PulseResult[]) {
+  const innerWidth = CHART.width - CHART.left - CHART.right
+  const innerHeight = CHART.height - CHART.top - CHART.bottom
+  const sourceResults = [...results]
+    .filter((result) => result.activity_index !== null)
+    .sort((a, b) => getTimestamp(a.created_at) - getTimestamp(b.created_at))
+    .slice(-12)
+  const points: PulsePoint[] = sourceResults.map((result, index) => {
+    const count = sourceResults.length
+    const x =
+      count === 1
+        ? CHART.left + innerWidth / 2
+        : CHART.left + (index / (count - 1)) * innerWidth
+    const value = Math.max(0, Math.min(1, result.activity_index ?? 0))
+    return {
+      id: result.id,
+      x,
+      y: getY(value, innerHeight),
+      value,
+      time: formatTime(result.created_at),
+      observedAt: result.created_at,
+      entryCount: result.entry_count,
+      exitCount: result.exit_count,
+      abnormalCount: result.abnormal_event_count,
+    }
+  })
+  const latestPoint = points.length ? points[points.length - 1] : null
+  const averageActivity = points.length
+    ? points.reduce((sum, point) => sum + point.value, 0) / points.length
+    : null
+  const trend =
+    points.length > 1 && latestPoint
+      ? latestPoint.value - points[0].value
+      : null
+
+  return {
+    areaPath: buildAreaPath(points),
+    averageActivity,
+    innerHeight,
+    innerWidth,
+    isTimeSeries: points.length >= 4,
+    labelIndexes: new Set([
+      0,
+      Math.floor((points.length - 1) / 2),
+      points.length - 1,
+    ]),
+    latestPoint,
+    linePath: buildLinePath(points),
+    normalBottom: getY(NORMAL_RANGE.low, innerHeight),
+    normalTop: getY(NORMAL_RANGE.high, innerHeight),
+    points,
+    trend,
+  }
 }
 
 function buildLinePath(points: PulsePoint[]) {

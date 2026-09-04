@@ -29,10 +29,17 @@ function Layout() {
       defaultOpen={false}
       style={{ "--sidebar-width": "13.25rem" } as CSSProperties}
     >
+      <a className="research-skip-link" href="#research-main">
+        跳至主要内容
+      </a>
       <AppSidebar />
       <SidebarInset className="research-app-shell">
         <ResearchSidebarControl />
-        <main className="research-shell-main flex-1">
+        <main
+          id="research-main"
+          className="research-shell-main flex-1"
+          tabIndex={-1}
+        >
           <ResearchPageShell>
             <Outlet />
           </ResearchPageShell>
