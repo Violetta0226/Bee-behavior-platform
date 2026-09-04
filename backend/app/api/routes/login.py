@@ -55,6 +55,9 @@ def recover_password(email: str, session: SessionDep) -> Message:
     """
     Password Recovery
     """
+    if not settings.PASSWORD_RECOVERY_ENABLED:
+        raise HTTPException(status_code=403, detail="Password recovery is disabled")
+
     user = crud.get_user_by_email(session=session, email=email)
 
     # Always return the same response to prevent email enumeration attacks
@@ -79,6 +82,9 @@ def reset_password(session: SessionDep, body: NewPassword) -> Message:
     """
     Reset password
     """
+    if not settings.PASSWORD_RECOVERY_ENABLED:
+        raise HTTPException(status_code=403, detail="Password recovery is disabled")
+
     email = verify_password_reset_token(token=body.token)
     if not email:
         raise HTTPException(status_code=400, detail="Invalid token")
@@ -106,6 +112,9 @@ def recover_password_html_content(email: str, session: SessionDep) -> Any:
     """
     HTML Content for Password Recovery
     """
+    if not settings.PASSWORD_RECOVERY_ENABLED:
+        raise HTTPException(status_code=403, detail="Password recovery is disabled")
+
     user = crud.get_user_by_email(session=session, email=email)
 
     if not user:

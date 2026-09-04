@@ -325,18 +325,12 @@ def test_register_user(client: TestClient, db: Session) -> None:
         f"{settings.API_V1_STR}/users/signup",
         json=data,
     )
-    assert r.status_code == 200
-    created_user = r.json()
-    assert created_user["email"] == username
-    assert created_user["full_name"] == full_name
+    assert r.status_code == 403
+    assert r.json()["detail"] == "Public registration is disabled"
 
     user_query = select(User).where(User.email == username)
     user_db = db.exec(user_query).first()
-    assert user_db
-    assert user_db.email == username
-    assert user_db.full_name == full_name
-    verified, _ = verify_password(password, user_db.hashed_password)
-    assert verified
+    assert user_db is None
 
 
 def test_register_user_already_exists_error(client: TestClient) -> None:
@@ -347,12 +341,34 @@ def test_register_user_already_exists_error(client: TestClient) -> None:
         "password": password,
         "full_name": full_name,
     }
-    r = client.post(
-        f"{settings.API_V1_STR}/users/signup",
-        json=data,
-    )
+    with patch("app.core.config.settings.PUBLIC_SIGNUP_ENABLED", True):
+        r = client.post(
+            f"{settings.API_V1_STR}/users/signup",
+            json=data,
+        )
     assert r.status_code == 400
     assert r.json()["detail"] == "The user with this email already exists in the system"
+
+
+def test_register_user_when_explicitly_enabled(client: TestClient, db: Session) -> None:
+    username = random_email()
+    password = random_lower_string()
+    full_name = random_lower_string()
+    data = {"email": username, "password": password, "full_name": full_name}
+
+    with patch("app.core.config.settings.PUBLIC_SIGNUP_ENABLED", True):
+        r = client.post(f"{settings.API_V1_STR}/users/signup", json=data)
+
+    assert r.status_code == 200
+    created_user = r.json()
+    assert created_user["email"] == username
+    assert created_user["full_name"] == full_name
+
+    user_query = select(User).where(User.email == username)
+    user_db = db.exec(user_query).first()
+    assert user_db
+    verified, _ = verify_password(password, user_db.hashed_password)
+    assert verified
 
 
 def test_update_user(

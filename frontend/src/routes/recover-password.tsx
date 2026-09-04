@@ -1,130 +1,39 @@
-import { zodResolver } from "@hookform/resolvers/zod"
-import { useMutation } from "@tanstack/react-query"
 import {
   createFileRoute,
   Link as RouterLink,
   redirect,
 } from "@tanstack/react-router"
-import { useForm } from "react-hook-form"
-import { z } from "zod"
 
-import { LoginService } from "@/client"
 import { AuthLayout } from "@/components/Common/AuthLayout"
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form"
-import { Input } from "@/components/ui/input"
-import { LoadingButton } from "@/components/ui/loading-button"
+import { Button } from "@/components/ui/button"
 import { isLoggedIn } from "@/hooks/useAuth"
-import useCustomToast from "@/hooks/useCustomToast"
-import { handleError } from "@/utils"
-
-const formSchema = z.object({
-  email: z.email({ message: "Invalid email address" }),
-})
-
-type FormData = z.infer<typeof formSchema>
 
 export const Route = createFileRoute("/recover-password")({
-  component: RecoverPassword,
+  component: PasswordRecoveryClosed,
   beforeLoad: async () => {
     if (isLoggedIn()) {
-      throw redirect({
-        to: "/",
-      })
+      throw redirect({ to: "/" })
     }
   },
   head: () => ({
-    meta: [
-      {
-        title: "找回密码｜巢影蜂析",
-      },
-    ],
+    meta: [{ title: "密码找回暂未开放｜巢影蜂析" }],
   }),
 })
 
-function RecoverPassword() {
-  const form = useForm<FormData>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      email: "",
-    },
-  })
-  const { showSuccessToast, showErrorToast } = useCustomToast()
-
-  const recoverPassword = async (data: FormData) => {
-    await LoginService.recoverPassword({
-      path: { email: data.email },
-    })
-  }
-
-  const mutation = useMutation({
-    mutationFn: recoverPassword,
-    onSuccess: () => {
-      showSuccessToast("Password recovery email sent successfully")
-      form.reset()
-    },
-    onError: handleError.bind(showErrorToast),
-  })
-
-  const onSubmit = async (data: FormData) => {
-    if (mutation.isPending) return
-    mutation.mutate(data)
-  }
-
+function PasswordRecoveryClosed() {
   return (
     <AuthLayout>
-      <Form {...form}>
-        <form
-          onSubmit={form.handleSubmit(onSubmit)}
-          className="flex flex-col gap-6"
-        >
-          <div className="flex flex-col items-center gap-2 text-center">
-            <h1 className="text-2xl font-bold">Password Recovery</h1>
-          </div>
-
-          <div className="grid gap-4">
-            <FormField
-              control={form.control}
-              name="email"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input
-                      data-testid="email-input"
-                      placeholder="user@example.com"
-                      type="email"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <LoadingButton
-              type="submit"
-              className="w-full"
-              loading={mutation.isPending}
-            >
-              Continue
-            </LoadingButton>
-          </div>
-
-          <div className="text-center text-sm">
-            Remember your password?{" "}
-            <RouterLink to="/login" className="underline underline-offset-4">
-              Log in
-            </RouterLink>
-          </div>
-        </form>
-      </Form>
+      <div className="flex flex-col gap-6 text-center">
+        <div className="flex flex-col gap-2">
+          <h1 className="text-2xl font-bold">密码找回暂未开放</h1>
+          <p className="text-muted-foreground text-sm">
+            如需重置密码，请联系项目管理员处理。
+          </p>
+        </div>
+        <Button asChild className="w-full">
+          <RouterLink to="/login">返回登录</RouterLink>
+        </Button>
+      </div>
     </AuthLayout>
   )
 }

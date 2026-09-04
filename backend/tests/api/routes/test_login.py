@@ -50,6 +50,7 @@ def test_recovery_password(
     client: TestClient, normal_user_token_headers: dict[str, str]
 ) -> None:
     with (
+        patch("app.core.config.settings.PASSWORD_RECOVERY_ENABLED", True),
         patch("app.core.config.settings.SMTP_HOST", "smtp.example.com"),
         patch("app.core.config.settings.SMTP_USER", "admin@example.com"),
     ):
@@ -68,10 +69,11 @@ def test_recovery_password_user_not_exits(
     client: TestClient, normal_user_token_headers: dict[str, str]
 ) -> None:
     email = "jVgQr@example.com"
-    r = client.post(
-        f"{settings.API_V1_STR}/password-recovery/{email}",
-        headers=normal_user_token_headers,
-    )
+    with patch("app.core.config.settings.PASSWORD_RECOVERY_ENABLED", True):
+        r = client.post(
+            f"{settings.API_V1_STR}/password-recovery/{email}",
+            headers=normal_user_token_headers,
+        )
     # Should return 200 with generic message to prevent email enumeration attacks
     assert r.status_code == 200
     assert r.json() == {
@@ -96,11 +98,12 @@ def test_reset_password(client: TestClient, db: Session) -> None:
     headers = user_authentication_headers(client=client, email=email, password=password)
     data = {"new_password": new_password, "token": token}
 
-    r = client.post(
-        f"{settings.API_V1_STR}/reset-password/",
-        headers=headers,
-        json=data,
-    )
+    with patch("app.core.config.settings.PASSWORD_RECOVERY_ENABLED", True):
+        r = client.post(
+            f"{settings.API_V1_STR}/reset-password/",
+            headers=headers,
+            json=data,
+        )
 
     assert r.status_code == 200
     assert r.json() == {"message": "Password updated successfully"}
@@ -114,16 +117,34 @@ def test_reset_password_invalid_token(
     client: TestClient, superuser_token_headers: dict[str, str]
 ) -> None:
     data = {"new_password": "changethis", "token": "invalid"}
-    r = client.post(
-        f"{settings.API_V1_STR}/reset-password/",
-        headers=superuser_token_headers,
-        json=data,
-    )
+    with patch("app.core.config.settings.PASSWORD_RECOVERY_ENABLED", True):
+        r = client.post(
+            f"{settings.API_V1_STR}/reset-password/",
+            headers=superuser_token_headers,
+            json=data,
+        )
     response = r.json()
 
     assert "detail" in response
     assert r.status_code == 400
     assert response["detail"] == "Invalid token"
+
+
+def test_password_recovery_is_disabled_by_default(client: TestClient) -> None:
+    r = client.post(f"{settings.API_V1_STR}/password-recovery/someone@example.com")
+
+    assert r.status_code == 403
+    assert r.json()["detail"] == "Password recovery is disabled"
+
+
+def test_password_reset_is_disabled_by_default(client: TestClient) -> None:
+    r = client.post(
+        f"{settings.API_V1_STR}/reset-password/",
+        json={"new_password": "a-secure-password", "token": "unused"},
+    )
+
+    assert r.status_code == 403
+    assert r.json()["detail"] == "Password recovery is disabled"
 
 
 def test_login_with_bcrypt_password_upgrades_to_argon2(
