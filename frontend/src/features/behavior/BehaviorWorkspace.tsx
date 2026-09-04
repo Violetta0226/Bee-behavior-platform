@@ -124,6 +124,7 @@ export function BehaviorWorkspace({ mode }: { mode: WorkspaceMode }) {
   }, [selectedId])
 
   const copy = MODE_COPY[mode]
+  const hasSelectedDetail = detail?.id === selectedId
 
   return (
     <main className="observation-page behavior-workspace">
@@ -173,7 +174,16 @@ export function BehaviorWorkspace({ mode }: { mode: WorkspaceMode }) {
         {!isLoading && reports.length === 0 && (
           <div className="behavior-empty">暂无可追溯的行为分析报告。</div>
         )}
-        {detail && (
+        {!isLoading &&
+          reports.length > 0 &&
+          selectedId &&
+          !hasSelectedDetail &&
+          !error && (
+            <div className="behavior-empty" role="status" aria-live="polite">
+              正在读取报告详情…
+            </div>
+          )}
+        {hasSelectedDetail && detail && (
           <>
             <EvidenceStrip report={detail} />
             {mode === "behavior" && <BehaviorView report={detail} />}
