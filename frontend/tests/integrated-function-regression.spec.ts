@@ -17,7 +17,7 @@ async function waitForResearchPage(page: Page) {
 test.beforeEach(async ({ page, request }, testInfo) => {
   test.setTimeout(180_000)
   const baseURL = String(testInfo.project.use.baseURL ?? "")
-  expect(baseURL).toBe("http://localhost:8000")
+  expect(baseURL).toMatch(/^http:\/\/(?:localhost|backend):8000$/)
   const login = await request.post(`${baseURL}/api/v1/login/access-token`, {
     form: {
       username: firstSuperuser,

@@ -81,3 +81,11 @@ export async function mockResearchData(page: Page) {
     }),
   )
 }
+
+export async function mockEmptyResearchData(page: Page) {
+  for (const resource of ["videos", "tasks", "results"]) {
+    await page.route(`**/api/v1/${resource}/?skip=0&limit=100`, (route) =>
+      route.fulfill({ json: { data: [], count: 0 } }),
+    )
+  }
+}

@@ -2,7 +2,12 @@ import { expect, type Page, test } from "@playwright/test"
 
 import { formatEvidenceId } from "../src/lib/observationIds"
 import { firstSuperuser, firstSuperuserPassword } from "./config"
-import { mockResearchData, mockSecondVideo, mockVideo } from "./research-data"
+import {
+  mockEmptyResearchData,
+  mockResearchData,
+  mockSecondVideo,
+  mockVideo,
+} from "./research-data"
 
 const primaryRoutes = ["/", "/videos", "/tasks", "/results"] as const
 const frameSizeByRoute = {
@@ -333,6 +338,8 @@ test("1920 Tasks / Results 横向仪器与正文尺度达标", async ({ page }) 
 test("Desktop Research Typography tokens 已进入最终 computed styles", async ({
   page,
 }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" })
+  await mockEmptyResearchData(page)
   await page.setViewportSize({ width: 1920, height: 1080 })
   const readings: Record<string, Record<string, number>> = {}
   const titleY: number[] = []
