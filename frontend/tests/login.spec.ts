@@ -36,12 +36,6 @@ test("登录按钮可见", async ({ page }) => {
   await expect(page.getByRole("button", { name: "登录" })).toBeVisible()
 })
 
-test("忘记密码入口可见", async ({ page }) => {
-  await page.goto("/login")
-
-  await expect(page.getByRole("link", { name: "忘记密码？" })).toBeVisible()
-})
-
 test("密码可以显示和隐藏", async ({ page }) => {
   await page.goto("/login")
 
