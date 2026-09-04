@@ -411,11 +411,11 @@ function TaskDetailPage() {
             <>
               <dl>
                 <div>
-                  <dt>检测个体</dt>
+                  <dt>检测记录</dt>
                   <dd>{result.detected_individuals}</dd>
                 </div>
                 <div>
-                  <dt>有效轨迹</dt>
+                  <dt>序列内轨迹</dt>
                   <dd>{result.valid_tracks}</dd>
                 </div>
                 <div>

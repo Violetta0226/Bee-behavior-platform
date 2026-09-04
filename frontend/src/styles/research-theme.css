@@ -1300,6 +1300,9 @@ a.result-chain-step:hover strong {
   transform: translateX(-50%);
   transition: left 440ms var(--motion-ease);
 }
+.scientific-gauge.is-unavailable > span {
+  display: none;
+}
 .scientific-gauge i {
   position: absolute;
   top: -3px;

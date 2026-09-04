@@ -980,7 +980,7 @@ function ObservationRow({ record }: { record: ObservationRecord }) {
         <p className="observation-record-label">观测摘要</p>
         <p className="mt-1 text-sm tabular-nums">
           {result
-            ? `${result.detected_individuals} 只次 · 进 ${result.entry_count} / 出 ${result.exit_count}`
+            ? `${result.detected_individuals} 个检测框 · ${result.valid_tracks} 条轨迹`
             : "等待形成分析读数"}
         </p>
       </div>

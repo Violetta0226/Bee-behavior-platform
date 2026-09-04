@@ -368,13 +368,13 @@ class AnalysisTasksPublic(SQLModel):
 
 # Shared properties for analysis results
 class AnalysisResultBase(SQLModel):
-    # 检测到的蜜蜂个体数量
+    # 检测框记录数（历史字段名保持 API 兼容）
     detected_individuals: int = Field(
         default=0,
         ge=0,
     )
 
-    # 有效连续轨迹数量
+    # 序列内轨迹数（无 MOT 真值时不表示质量评价）
     valid_tracks: int = Field(
         default=0,
         ge=0,

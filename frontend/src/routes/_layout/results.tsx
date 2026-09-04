@@ -40,6 +40,11 @@ type AnalysisResultItem = {
   created_at: string | null
 }
 type AnalysisResultsResponse = { data: AnalysisResultItem[]; count: number }
+type ResultMetrics = {
+  source?: string
+  metric_status?: string
+  flux_status?: string | null
+}
 type VideoItem = {
   id: string
   original_filename: string
@@ -274,6 +279,8 @@ function ResultInstrument({
     a = formatEvidenceId("A", result.task_id),
     r = formatEvidenceId("R", result.id),
     trackRate = calculateTrackRate(result),
+    metrics = parseResultMetrics(result.metrics_json),
+    fluxAvailable = metrics?.flux_status !== "unavailable_without_gate_or_roi",
     activity = Math.max(0, Math.min(1, result.activity_index ?? 0)),
     net = result.entry_count - result.exit_count,
     totalFlow = result.entry_count + result.exit_count,
@@ -354,8 +361,8 @@ function ResultInstrument({
           data-research-sequence="core"
         >
           {[
-            ["检测个体", result.detected_individuals, "只", "neutral"],
-            ["有效轨迹", result.valid_tracks, "条", "steel"],
+            ["检测记录", result.detected_individuals, "框", "neutral"],
+            ["序列内轨迹", result.valid_tracks, "条", "steel"],
             [
               "活动指数",
               formatActivityIndex(result.activity_index),
@@ -379,16 +386,20 @@ function ResultInstrument({
           <header>
             <span>01</span>
             <h3>巢门行为</h3>
-            <p>进出巢方向与净流量</p>
+            <p>{fluxAvailable ? "进出巢方向与净流量" : "未配置巢门线或 ROI"}</p>
           </header>
           <div
             className="mini-hive-signature"
             role="img"
-            aria-label={`进巢 ${result.entry_count} 次，出巢 ${result.exit_count} 次，净流量 ${net >= 0 ? `正 ${net}` : net}`}
+            aria-label={
+              fluxAvailable
+                ? `进巢 ${result.entry_count} 次，出巢 ${result.exit_count} 次，净流量 ${net >= 0 ? `正 ${net}` : net}`
+                : "未配置巢门线或 ROI，进出巢计数不可用"
+            }
           >
             <div className="mini-hive-reading is-entry">
               <span>进巢</span>
-              <strong>{result.entry_count}</strong>
+              <strong>{fluxAvailable ? result.entry_count : "—"}</strong>
             </div>
             <svg
               viewBox="0 0 760 236"
@@ -426,7 +437,7 @@ function ResultInstrument({
             </svg>
             <div className="mini-hive-reading is-exit">
               <span>出巢</span>
-              <strong>{result.exit_count}</strong>
+              <strong>{fluxAvailable ? result.exit_count : "—"}</strong>
             </div>
           </div>
           <div className="hive-balance">
@@ -434,8 +445,14 @@ function ResultInstrument({
             <i aria-hidden="true" />
           </div>
           <p className="panel-reading">
-            净流量 <strong>{net >= 0 ? `+${net}` : net}</strong> ·{" "}
-            {net === 0 ? "进出平衡" : net > 0 ? "进巢占优" : "出巢占优"}
+            {fluxAvailable ? (
+              <>
+                净流量 <strong>{net >= 0 ? `+${net}` : net}</strong> ·{" "}
+                {net === 0 ? "进出平衡" : net > 0 ? "进巢占优" : "出巢占优"}
+              </>
+            ) : (
+              "进出巢计数不可用，不将缺失值解读为 0。"
+            )}
           </p>
         </section>
         <section
@@ -453,7 +470,7 @@ function ResultInstrument({
             <span>{getActivityLabel(result.activity_index)}</span>
           </div>
           <div
-            className="scientific-gauge"
+            className={`scientific-gauge${result.activity_index === null ? " is-unavailable" : ""}`}
             role="img"
             aria-label={`活动指数 ${formatActivityIndex(result.activity_index)}，技术参考区间 0.35 至 0.75`}
             style={
@@ -477,8 +494,8 @@ function ResultInstrument({
         >
           <header>
             <span>03</span>
-            <h3>轨迹质量</h3>
-            <p>有效轨迹 / 检测个体</p>
+            <h3>轨迹汇总</h3>
+            <p>序列内轨迹 / 检测框记录</p>
           </header>
           <div className="tracking-reading">
             <strong>
@@ -489,13 +506,14 @@ function ResultInstrument({
           <div
             className="efficiency-rail"
             role="img"
-            aria-label={`轨迹有效率 ${result.valid_tracks} / ${result.detected_individuals}，${trackRate}%`}
+            aria-label={`轨迹与检测记录的描述性归并比 ${result.valid_tracks} / ${result.detected_individuals}，${trackRate}%`}
             style={{ "--track-rate": `${trackRate}%` } as CSSProperties}
           >
             <span />
           </div>
           <p className="panel-reading">
-            平均速度 <strong>{result.average_speed ?? "—"}</strong> px/s
+            平均速度 <strong>{result.average_speed ?? "—"}</strong> 体长/s ·
+            归并比仅作描述，不代表轨迹准确率
           </p>
         </section>
         <section
@@ -526,6 +544,17 @@ function calculateTrackRate(result: AnalysisResultItem) {
         ((result.valid_tracks / result.detected_individuals) * 100).toFixed(1),
       )
     : 0
+}
+function parseResultMetrics(value: string | null): ResultMetrics | null {
+  if (!value) return null
+  try {
+    const parsed: unknown = JSON.parse(value)
+    return parsed && typeof parsed === "object"
+      ? (parsed as ResultMetrics)
+      : null
+  } catch {
+    return null
+  }
 }
 function getActivityLabel(value: number | null) {
   if (value === null) return "暂无数据"
