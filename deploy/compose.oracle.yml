@@ -65,6 +65,8 @@ services:
       ANALYSIS_OUTPUT_DIR: /data/analysis/results
       VIDEO_UPLOAD_DIR: /data/uploads/videos
       MAX_VIDEO_UPLOAD_BYTES: ${MAX_VIDEO_UPLOAD_BYTES:-1073741824}
+      PUBLIC_SIGNUP_ENABLED: ${PUBLIC_SIGNUP_ENABLED:-false}
+      PASSWORD_RECOVERY_ENABLED: ${PASSWORD_RECOVERY_ENABLED:-false}
     volumes:
       - analysis-data:/data
     healthcheck:

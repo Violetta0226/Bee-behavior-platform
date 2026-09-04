@@ -1,9 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod"
-import {
-  createFileRoute,
-  Link as RouterLink,
-  redirect,
-} from "@tanstack/react-router"
+import { createFileRoute, redirect } from "@tanstack/react-router"
 import { useForm } from "react-hook-form"
 import { z } from "zod"
 
@@ -106,15 +102,7 @@ function Login() {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <div className="auth-password-label-row flex items-center">
-                    <FormLabel>密码</FormLabel>
-                    <RouterLink
-                      to="/recover-password"
-                      className="auth-text-link ml-auto inline-flex items-center text-sm underline-offset-4 hover:underline"
-                    >
-                      忘记密码？
-                    </RouterLink>
-                  </div>
+                  <FormLabel>密码</FormLabel>
                   <FormControl>
                     <PasswordInput
                       data-testid="password-input"
@@ -140,12 +128,9 @@ function Login() {
             </LoadingButton>
           </div>
 
-          <div className="auth-register-prompt text-center text-sm">
-            还没有账号？
-            <RouterLink to="/signup" className="underline underline-offset-4">
-              注册
-            </RouterLink>
-          </div>
+          <p className="auth-register-prompt text-center text-sm">
+            账号由管理员统一开通
+          </p>
         </form>
       </Form>
     </AuthLayout>

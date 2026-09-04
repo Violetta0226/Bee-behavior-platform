@@ -53,14 +53,11 @@ test("密码可以显示和隐藏", async ({ page }) => {
   await expect(passwordInput).toHaveAttribute("type", "password")
 })
 
-test("忘记密码和注册入口保持原有跳转", async ({ page }) => {
+test("公开注册和密码找回入口已关闭", async ({ page }) => {
   await page.goto("/login")
-  await page.getByRole("link", { name: "忘记密码？" }).click()
-  await expect(page).toHaveURL(/\/recover-password$/)
-
-  await page.goto("/login")
-  await page.getByRole("link", { name: "注册" }).click()
-  await expect(page).toHaveURL(/\/signup$/)
+  await expect(page.getByRole("link", { name: "忘记密码？" })).toHaveCount(0)
+  await expect(page.getByRole("link", { name: "注册" })).toHaveCount(0)
+  await expect(page.getByText("账号由管理员统一开通")).toBeVisible()
 })
 
 test("主题切换在浅色与深色模式下生效", async ({ page }) => {

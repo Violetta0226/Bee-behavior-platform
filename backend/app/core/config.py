@@ -25,6 +25,8 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
     FRONTEND_HOST: str = "http://localhost:5173"
     FASTAPI_ENV: Literal["development"] | None = None
+    PUBLIC_SIGNUP_ENABLED: bool = False
+    PASSWORD_RECOVERY_ENABLED: bool = False
 
     PROJECT_NAME: str
     SENTRY_DSN: HttpUrl | None = None
