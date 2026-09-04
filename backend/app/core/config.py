@@ -1,5 +1,6 @@
 import warnings
-from typing import Literal, Self
+from collections.abc import Callable
+from typing import Literal, Self, cast
 
 from pydantic import (
     EmailStr,
@@ -97,4 +98,4 @@ class Settings(BaseSettings):
         return self
 
 
-settings = Settings()  # type: ignore
+settings = cast(Callable[[], Settings], Settings)()
