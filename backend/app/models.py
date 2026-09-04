@@ -1,8 +1,9 @@
 import uuid
 from datetime import UTC, datetime
+from typing import Any, Literal
 
-from pydantic import EmailStr
-from sqlalchemy import DateTime
+from pydantic import EmailStr, field_validator
+from sqlalchemy import JSON, Column, DateTime, Text
 from sqlmodel import Field, Relationship, SQLModel
 
 
@@ -112,9 +113,379 @@ class ItemsPublic(SQLModel):
     count: int
 
 
+BehaviorModality = Literal["RGB", "IR", "UNKNOWN"]
+BehaviorMetricStatus = Literal[
+    "descriptive_only_without_human_mot_ground_truth",
+    "validated_against_human_mot_ground_truth",
+]
+
+
+class BehaviorReportImport(SQLModel):
+    report: dict[str, Any]
+    source_sha256: str = Field(min_length=64, max_length=64)
+    source_path: str | None = Field(default=None, max_length=1024)
+    modality: BehaviorModality = "UNKNOWN"
+    model_version: str | None = Field(default=None, max_length=255)
+    ground_truth_version: str | None = Field(default=None, max_length=255)
+    metric_status: BehaviorMetricStatus = (
+        "descriptive_only_without_human_mot_ground_truth"
+    )
+
+    @field_validator("source_sha256")
+    @classmethod
+    def validate_source_sha256(cls, value: str) -> str:
+        if any(character not in "0123456789abcdefABCDEF" for character in value):
+            raise ValueError("source_sha256 must contain only hexadecimal characters")
+        return value.lower()
+
+
+class BehaviorReport(SQLModel, table=True):
+    __tablename__ = "behavior_report"
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    sequence_id: str = Field(index=True, max_length=255)
+    schema_version: str = Field(max_length=32)
+    source: str | None = Field(default=None, max_length=1024)
+    source_sha256: str = Field(unique=True, index=True, max_length=64)
+    modality: str = Field(default="UNKNOWN", max_length=16)
+    model_version: str | None = Field(default=None, max_length=255)
+    ground_truth_version: str | None = Field(default=None, max_length=255)
+    metric_status: str = Field(max_length=128)
+    duration_seconds: float
+    detection_count: int
+    track_count: int
+    entry_count: int | None = None
+    exit_count: int | None = None
+    anomaly_window_count: int = 0
+    payload: dict[str, Any] = Field(sa_column=Column(JSON, nullable=False))
+    created_at: datetime = Field(
+        default_factory=get_datetime_utc,
+        sa_type=DateTime(timezone=True),  # type: ignore
+    )
+
+
+class BehaviorReportPublic(SQLModel):
+    id: uuid.UUID
+    sequence_id: str
+    schema_version: str
+    source: str | None
+    source_sha256: str
+    modality: str
+    model_version: str | None
+    ground_truth_version: str | None
+    metric_status: str
+    duration_seconds: float
+    detection_count: int
+    track_count: int
+    entry_count: int | None
+    exit_count: int | None
+    anomaly_window_count: int
+    created_at: datetime
+
+
+class BehaviorReportDetail(BehaviorReportPublic):
+    payload: dict[str, Any]
+
+
+class BehaviorReportsPublic(SQLModel):
+    data: list[BehaviorReportPublic]
+    count: int
+
+
+class DashboardSummary(SQLModel):
+    video_count: int
+    analysis_report_count: int
+    tracked_individual_count: int
+    anomaly_window_count: int
+    entry_count: int
+    exit_count: int
+    latest_report_at: datetime | None
+
+
 # Generic message
 class Message(SQLModel):
     message: str
+
+
+# Shared properties for videos
+class VideoBase(SQLModel):
+    original_filename: str = Field(
+        min_length=1,
+        max_length=255,
+    )
+    scene_type: str = Field(
+        max_length=20,
+        index=True,
+    )
+    file_size: int = Field(
+        default=0,
+        ge=0,
+    )
+    content_type: str | None = Field(
+        default=None,
+        max_length=100,
+    )
+    status: str = Field(
+        default="UPLOADED",
+        max_length=30,
+        index=True,
+    )
+
+
+# Database model
+class Video(VideoBase, table=True):
+    id: uuid.UUID = Field(
+        default_factory=uuid.uuid4,
+        primary_key=True,
+    )
+
+    stored_filename: str = Field(
+        max_length=255,
+        unique=True,
+        index=True,
+    )
+
+    file_path: str = Field(
+        max_length=1024,
+    )
+
+    owner_id: uuid.UUID = Field(
+        foreign_key="user.id",
+        nullable=False,
+        ondelete="CASCADE",
+    )
+
+    created_at: datetime | None = Field(
+        default_factory=get_datetime_utc,
+        sa_type=DateTime(timezone=True),  # type: ignore
+    )
+
+
+# Properties returned by the API
+class VideoPublic(VideoBase):
+    id: uuid.UUID
+    owner_id: uuid.UUID
+    created_at: datetime | None = None
+
+
+class VideosPublic(SQLModel):
+    data: list[VideoPublic]
+    count: int
+
+
+# Shared properties for analysis tasks
+class AnalysisTaskBase(SQLModel):
+    task_type: str = Field(
+        default="VIDEO_ANALYSIS",
+        max_length=50,
+        index=True,
+    )
+
+    status: str = Field(
+        default="PENDING",
+        max_length=30,
+        index=True,
+    )
+
+    progress: int = Field(
+        default=0,
+        ge=0,
+        le=100,
+    )
+
+    model_name: str | None = Field(
+        default=None,
+        max_length=100,
+    )
+
+    error_message: str | None = Field(
+        default=None,
+        max_length=1000,
+    )
+
+
+# Database model
+class AnalysisTask(AnalysisTaskBase, table=True):
+    id: uuid.UUID = Field(
+        default_factory=uuid.uuid4,
+        primary_key=True,
+    )
+
+    video_id: uuid.UUID = Field(
+        foreign_key="video.id",
+        nullable=False,
+        ondelete="CASCADE",
+        index=True,
+    )
+
+    owner_id: uuid.UUID = Field(
+        foreign_key="user.id",
+        nullable=False,
+        ondelete="CASCADE",
+        index=True,
+    )
+
+    created_at: datetime | None = Field(
+        default_factory=get_datetime_utc,
+        sa_type=DateTime(timezone=True),  # type: ignore
+    )
+
+    started_at: datetime | None = Field(
+        default=None,
+        sa_type=DateTime(timezone=True),  # type: ignore
+    )
+
+    completed_at: datetime | None = Field(
+        default=None,
+        sa_type=DateTime(timezone=True),  # type: ignore
+    )
+
+
+class AnalysisTaskCreate(SQLModel):
+    video_id: uuid.UUID
+
+    model_name: str | None = Field(
+        default=None,
+        max_length=100,
+    )
+
+
+# Properties returned by the API
+class AnalysisTaskPublic(AnalysisTaskBase):
+    id: uuid.UUID
+    video_id: uuid.UUID
+    owner_id: uuid.UUID
+
+    created_at: datetime | None = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
+
+
+class AnalysisTasksPublic(SQLModel):
+    data: list[AnalysisTaskPublic]
+    count: int
+
+
+# Shared properties for analysis results
+class AnalysisResultBase(SQLModel):
+    # 检测框记录数（历史字段名保持 API 兼容）
+    detected_individuals: int = Field(
+        default=0,
+        ge=0,
+    )
+
+    # 序列内轨迹数（无 MOT 真值时不表示质量评价）
+    valid_tracks: int = Field(
+        default=0,
+        ge=0,
+    )
+
+    # 进巢数量
+    entry_count: int = Field(
+        default=0,
+        ge=0,
+    )
+
+    # 出巢数量
+    exit_count: int = Field(
+        default=0,
+        ge=0,
+    )
+
+    # 平均运动速度（当前真实流水线输出为体长/s）
+    average_speed: float | None = Field(
+        default=None,
+    )
+
+    # 蜂群活动指数
+    activity_index: float | None = Field(
+        default=None,
+    )
+
+    # 检测到的异常事件数量
+    abnormal_event_count: int = Field(
+        default=0,
+        ge=0,
+    )
+
+    # 可扩展指标 JSON
+    # 后期模型增加新指标时，
+    # 不需要每次都立即修改数据库字段
+    metrics_json: str | None = Field(
+        default=None,
+        sa_type=Text,
+    )
+
+
+# Database model
+class AnalysisResult(
+    AnalysisResultBase,
+    table=True,
+):
+    id: uuid.UUID = Field(
+        default_factory=uuid.uuid4,
+        primary_key=True,
+    )
+
+    # 一个 AnalysisTask 对应一个最终结果
+    task_id: uuid.UUID = Field(
+        foreign_key="analysistask.id",
+        nullable=False,
+        unique=True,
+        index=True,
+        ondelete="CASCADE",
+    )
+
+    video_id: uuid.UUID = Field(
+        foreign_key="video.id",
+        nullable=False,
+        index=True,
+        ondelete="CASCADE",
+    )
+
+    owner_id: uuid.UUID = Field(
+        foreign_key="user.id",
+        nullable=False,
+        index=True,
+        ondelete="CASCADE",
+    )
+
+    # 后续模型生成的标注视频
+    result_video_path: str | None = Field(
+        default=None,
+        max_length=1024,
+    )
+
+    # 后续保存轨迹、逐帧结果等 JSON
+    result_json_path: str | None = Field(
+        default=None,
+        max_length=1024,
+    )
+
+    created_at: datetime | None = Field(
+        default_factory=get_datetime_utc,
+        sa_type=DateTime(timezone=True),  # type: ignore
+    )
+
+
+# Properties returned by the API
+class AnalysisResultPublic(
+    AnalysisResultBase,
+):
+    id: uuid.UUID
+    task_id: uuid.UUID
+    video_id: uuid.UUID
+    owner_id: uuid.UUID
+
+    result_video_path: str | None = None
+    result_json_path: str | None = None
+
+    created_at: datetime | None = None
+
+
+class AnalysisResultsPublic(SQLModel):
+    data: list[AnalysisResultPublic]
+    count: int
 
 
 # JSON payload containing access token

@@ -24,7 +24,7 @@ const PendingItems = () => (
       {Array.from({ length: 5 }).map((_, index) => (
         <TableRow key={index}>
           <TableCell>
-            <Skeleton className="h-4 w-64 font-mono" />
+            <Skeleton className="h-4 w-64" />
           </TableCell>
           <TableCell>
             <Skeleton className="h-4 w-32" />

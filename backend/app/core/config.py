@@ -30,6 +30,13 @@ class Settings(BaseSettings):
     SENTRY_DSN: HttpUrl | None = None
     DATABASE_URL: PostgresDsn
 
+    ANALYSIS_WORKER_URL: str | None = None
+    ANALYSIS_WORKER_TOKEN: str | None = None
+    ANALYSIS_TIMEOUT_SECONDS: int = 7200
+    ANALYSIS_OUTPUT_DIR: str = "/data/analysis/results"
+    VIDEO_UPLOAD_DIR: str = "/data/uploads/videos"
+    MAX_VIDEO_UPLOAD_BYTES: int = 1024 * 1024 * 1024
+
     @field_validator("DATABASE_URL", mode="before")
     @classmethod
     def _use_psycopg_driver(cls, value: str | PostgresDsn) -> str:

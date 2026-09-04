@@ -4,6 +4,9 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --font-chaoying-title: var(--chaoying-font-title);
+  --font-chaoying-body: var(--chaoying-font-body);
+  --font-chaoying-data: var(--chaoying-font-data);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -42,6 +45,12 @@
 }
 
 :root {
+  --chaoying-font-title:
+    "Source Han Serif SC", "Noto Serif CJK SC", "Songti SC", STSong, SimSun,
+    serif;
+  --chaoying-font-body: "Songti SC", STSong, SimSun, "Noto Serif CJK SC", serif;
+  --chaoying-font-data:
+    "Times New Roman", FangSong, STFangsong, FangSong_GB2312, serif;
   --radius: 0.625rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
@@ -77,37 +86,37 @@
 }
 
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.65 0.10687 182.4689);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
+  --background: #1f252b;
+  --foreground: #f8fafc;
+  --card: #293139;
+  --card-foreground: #f8fafc;
+  --popover: #293139;
+  --popover-foreground: #f8fafc;
+  --primary: #f28c28;
+  --primary-foreground: #1f252b;
+  --secondary: #293139;
+  --secondary-foreground: #f8fafc;
+  --muted: #293139;
+  --muted-foreground: #94a3b8;
+  --accent: #33404a;
+  --accent-foreground: #f8fafc;
+  --destructive: #c06c54;
+  --border: rgb(216 221 227 / 22%);
+  --input: rgb(216 221 227 / 22%);
+  --ring: #f28c28;
   --chart-1: oklch(0.488 0.243 264.376);
   --chart-2: oklch(0.696 0.17 162.48);
   --chart-3: oklch(0.769 0.188 70.08);
   --chart-4: oklch(0.627 0.265 303.9);
   --chart-5: oklch(0.645 0.246 16.439);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.65 0.10687 182.4689);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --sidebar: #293139;
+  --sidebar-foreground: #f8fafc;
+  --sidebar-primary: #f28c28;
+  --sidebar-primary-foreground: #1f252b;
+  --sidebar-accent: #33404a;
+  --sidebar-accent-foreground: #f8fafc;
+  --sidebar-border: rgb(216 221 227 / 22%);
+  --sidebar-ring: #f28c28;
 }
 
 @layer base {
@@ -116,6 +125,28 @@
   }
   body {
     @apply bg-background text-foreground;
+    font-family: var(--chaoying-font-body);
+    font-size: 1rem;
+    line-height: 1.65;
+  }
+  html,
+  body,
+  #root {
+    min-height: 100%;
+  }
+  .dark,
+  .dark body,
+  .dark #root {
+    background: #1f252b;
+  }
+  h1,
+  h2,
+  h3 {
+    font-family: var(--chaoying-font-title);
+  }
+  time,
+  .tabular-nums {
+    font-family: var(--chaoying-font-data);
   }
   button,
   [role="button"] {

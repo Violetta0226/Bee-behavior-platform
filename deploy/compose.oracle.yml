@@ -1,0 +1,81 @@
+name: ${COMPOSE_PROJECT_NAME:-bee-platform-candidate}
+
+services:
+  db:
+    image: postgres:18
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d app"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Variable not set}
+      POSTGRES_DB: app
+    volumes:
+      - database:/var/lib/postgresql
+
+  analysis-worker:
+    image: ${WORKER_IMAGE:-bee-behavior-analysis-worker:latest}
+    build:
+      context: ..
+      dockerfile: analysis-worker/Dockerfile
+    restart: unless-stopped
+    init: true
+    environment:
+      ANALYSIS_WORKER_TOKEN: ${ANALYSIS_WORKER_TOKEN:?Variable not set}
+      ANALYSIS_DATA_ROOT: /data
+      ANALYSIS_MODEL_ROOT: /models
+      ANALYSIS_SAMPLE_FPS: ${ANALYSIS_SAMPLE_FPS:-5}
+    volumes:
+      - analysis-data:/data
+      - ${ANALYSIS_MODEL_DIR:?Variable not set}:/models:ro
+
+  backend:
+    image: ${BACKEND_IMAGE:-bee-behavior-platform-backend:latest}
+    build:
+      context: ..
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    init: true
+    depends_on:
+      db:
+        condition: service_healthy
+        restart: true
+      analysis-worker:
+        condition: service_healthy
+        restart: true
+    ports:
+      - "0.0.0.0:${APP_PORT:-18086}:8000"
+    environment:
+      PROJECT_NAME: ${PROJECT_NAME:?Variable not set}
+      SECRET_KEY: ${SECRET_KEY:?Variable not set}
+      FIRST_SUPERUSER: ${FIRST_SUPERUSER:?Variable not set}
+      FIRST_SUPERUSER_PASSWORD: ${FIRST_SUPERUSER_PASSWORD:?Variable not set}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      EMAILS_FROM_EMAIL: ${EMAILS_FROM_EMAIL:-noreply@smartbee.example}
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:?Variable not set}@db:5432/app
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      FRONTEND_HOST: ${FRONTEND_HOST:?Variable not set}
+      ANALYSIS_WORKER_URL: http://analysis-worker:8100
+      ANALYSIS_WORKER_TOKEN: ${ANALYSIS_WORKER_TOKEN:?Variable not set}
+      ANALYSIS_OUTPUT_DIR: /data/analysis/results
+      VIDEO_UPLOAD_DIR: /data/uploads/videos
+      MAX_VIDEO_UPLOAD_BYTES: ${MAX_VIDEO_UPLOAD_BYTES:-1073741824}
+    volumes:
+      - analysis-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/v1/utils/health-check/"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+volumes:
+  database:
+    name: ${DB_VOLUME_NAME:-bee-platform-candidate-db-data}
+  analysis-data:
+    name: ${ANALYSIS_VOLUME_NAME:-bee-platform-candidate-analysis-data}

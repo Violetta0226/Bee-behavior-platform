@@ -1,0 +1,4 @@
+interface:
+  display_name: "巢影蜂析设计系统"
+  short_description: "巢影蜂析项目专属前端设计系统、交互体验与行为数据可视化规范"
+  default_prompt: "Use $chaoying-design-system to design or review this project frontend experience."
