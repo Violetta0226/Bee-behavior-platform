@@ -67,6 +67,9 @@ function AuthThemeControl() {
 export function AuthLayout({ children }: AuthLayoutProps) {
   return (
     <div className="auth-shell">
+      <a className="auth-skip-link" href="#auth-entry">
+        跳至登录表单
+      </a>
       <div className="auth-biofield" aria-hidden="true">
         <svg viewBox="0 0 960 900" preserveAspectRatio="xMidYMid slice">
           <title>蜂群观测轨迹背景</title>
@@ -122,7 +125,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
         </div>
       </section>
 
-      <main className="auth-entry">
+      <main id="auth-entry" className="auth-entry" tabIndex={-1}>
         <AuthThemeControl />
         <div className="auth-form-surface" data-auth-form>
           {children}

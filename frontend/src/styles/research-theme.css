@@ -121,9 +121,66 @@
   color: var(--research-ink);
   transition: width var(--motion-medium) var(--motion-ease);
 }
+.research-skip-link {
+  position: fixed;
+  z-index: 100;
+  top: 0.75rem;
+  left: 50%;
+  padding: 0.7rem 1rem;
+  border: 1px solid var(--research-orange);
+  border-radius: 6px;
+  color: var(--research-ink);
+  background: var(--research-surface-solid);
+  box-shadow: 0 10px 30px rgb(15 23 42 / 0.16);
+  font-weight: 600;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -140%);
+  transition:
+    opacity var(--motion-fast) ease,
+    transform var(--motion-fast) ease;
+}
+.research-skip-link:focus-visible {
+  outline: 2px solid var(--research-orange);
+  outline-offset: 3px;
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, 0);
+}
 .research-shell-main {
   min-width: 0;
   padding: 0;
+}
+.research-user-avatar {
+  border: 1px solid color-mix(in srgb, var(--research-orange) 58%, transparent);
+  background: color-mix(
+    in srgb,
+    var(--research-orange) 14%,
+    var(--research-surface-solid)
+  );
+  color: var(--research-ink);
+}
+.research-user-avatar [data-slot="avatar-fallback"] {
+  background: transparent;
+  color: inherit;
+}
+.observation-sidebar-container [data-sidebar="group"] {
+  padding-block: 0.35rem;
+}
+.observation-sidebar-container [data-sidebar="group-label"] {
+  position: relative;
+  height: 1.75rem;
+  color: var(--research-muted);
+  font-family: var(--chaoying-font-data);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+}
+.observation-sidebar-container [data-sidebar="group-label"]::after {
+  height: 1px;
+  flex: 1;
+  margin-left: 0.6rem;
+  background: linear-gradient(90deg, var(--research-divider), transparent);
+  content: "";
 }
 .research-canvas {
   position: relative;
@@ -1371,6 +1428,13 @@ a.result-chain-step:hover strong {
   border-bottom: 1px solid var(--research-divider);
   text-align: left;
 }
+
+/* Long result indexes can grow to hundreds of records. Keep their off-screen
+   layout and paint work out of the initial interaction path. */
+.result-index button {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 132px;
+}
 .result-index > div:last-child > button:last-child {
   border-bottom: 0;
 }
@@ -1605,6 +1669,9 @@ a.result-chain-step:hover strong {
     border: 1px solid var(--research-divider);
     border-radius: 7px;
     box-shadow: none;
+  }
+  .research-biofield {
+    display: none;
   }
   .research-page {
     padding-bottom: 3rem;

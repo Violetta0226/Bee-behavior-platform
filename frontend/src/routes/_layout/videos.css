@@ -522,6 +522,8 @@
     background-color 320ms ease,
     transform 320ms cubic-bezier(0.22, 1, 0.36, 1),
     border-color 320ms ease;
+  content-visibility: auto;
+  contain-intrinsic-size: auto 248px;
 }
 
 .archive-plate::before {
@@ -1008,12 +1010,12 @@
   list-style: none;
 }
 
-.archive-intake-steps span {
+.archive-intake-steps li {
   color: var(--archive-ink-weak);
   font-size: var(--archive-text-xs);
 }
 
-.archive-intake-steps span.is-active {
+.archive-intake-steps li.is-active {
   color: var(--archive-ink-strong);
 }
 

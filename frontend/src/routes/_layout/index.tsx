@@ -153,12 +153,7 @@ function useObservationReveal(isLoading: boolean) {
     const revealFrame = window.requestAnimationFrame(() => {
       for (const target of targets) {
         if (target.classList.contains("is-revealed")) continue
-        const rect = target.getBoundingClientRect()
-        if (rect.top < window.innerHeight * 0.82) {
-          revealTarget(target)
-        } else {
-          observer.observe(target)
-        }
+        observer.observe(target)
       }
     })
 

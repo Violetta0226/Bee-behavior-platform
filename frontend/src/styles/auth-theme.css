@@ -814,3 +814,29 @@
     font-size: 42px;
   }
 }
+.auth-skip-link {
+  position: fixed;
+  z-index: 100;
+  top: 0.75rem;
+  left: 50%;
+  padding: 0.7rem 1rem;
+  border: 1px solid var(--auth-orange);
+  border-radius: 5px;
+  color: var(--auth-ink);
+  background: var(--auth-surface);
+  box-shadow: 0 10px 30px rgb(15 23 42 / 0.18);
+  font-weight: 600;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -140%);
+  transition:
+    opacity 180ms ease,
+    transform 180ms ease;
+}
+.auth-skip-link:focus-visible {
+  outline: 2px solid var(--auth-orange);
+  outline-offset: 3px;
+  opacity: 1;
+  pointer-events: auto;
+  transform: translate(-50%, 0);
+}

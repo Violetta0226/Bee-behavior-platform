@@ -555,7 +555,7 @@ function VideosPage() {
                   type="search"
                   value={searchQuery}
                   onChange={(event) => setSearchQuery(event.target.value)}
-                  placeholder="检索观测文件"
+                  placeholder="检索观测文件…"
                 />
               </label>
               <button
@@ -664,15 +664,15 @@ function VideosPage() {
           </DialogHeader>
 
           <ol className="archive-intake-steps" aria-label="入库步骤">
-            <span className="is-active">
+            <li className="is-active">
               <b>01</b> 视频文件
-            </span>
-            <span>
+            </li>
+            <li>
               <b>02</b> 观测场景
-            </span>
-            <span>
+            </li>
+            <li>
               <b>03</b> 确认入库
-            </span>
+            </li>
           </ol>
 
           <div className="archive-intake-grid">
@@ -691,6 +691,7 @@ function VideosPage() {
                 type="file"
                 accept=".mp4,.mov,.avi,.mkv,.webm,video/*"
                 className="sr-only"
+                aria-label="选择观测视频文件"
                 onChange={handleFileChange}
               />
               <div className="archive-dropzone-mark" aria-hidden="true">
@@ -757,7 +758,7 @@ function VideosPage() {
               ) : (
                 <Check className="size-4" aria-hidden="true" />
               )}
-              {isUploading ? "正在建立记录..." : "确认入库"}
+              {isUploading ? "正在建立记录…" : "确认入库"}
             </button>
           </DialogFooter>
         </DialogContent>
@@ -1137,11 +1138,7 @@ function useArchiveReveal(isLoading: boolean, _recordCount: number) {
     const frame = window.requestAnimationFrame(() => {
       for (const target of targets) {
         if (target.classList.contains("is-revealed")) continue
-        if (target.getBoundingClientRect().top < window.innerHeight * 0.82) {
-          reveal(target)
-        } else {
-          observer.observe(target)
-        }
+        observer.observe(target)
       }
     })
 

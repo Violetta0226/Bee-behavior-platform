@@ -1,16 +1,22 @@
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools"
 import { createRootRoute, HeadContent, Outlet } from "@tanstack/react-router"
-import { TanStackRouterDevtools } from "@tanstack/react-router-devtools"
+import { lazy, Suspense } from "react"
 import ErrorComponent from "@/components/Common/ErrorComponent"
 import NotFound from "@/components/Common/NotFound"
+
+const DevelopmentTools = import.meta.env.DEV
+  ? lazy(() => import("@/components/Common/DevelopmentTools"))
+  : null
 
 export const Route = createRootRoute({
   component: () => (
     <>
       <HeadContent />
       <Outlet />
-      <TanStackRouterDevtools position="bottom-right" />
-      <ReactQueryDevtools initialIsOpen={false} />
+      {DevelopmentTools ? (
+        <Suspense fallback={null}>
+          <DevelopmentTools />
+        </Suspense>
+      ) : null}
     </>
   ),
   notFoundComponent: () => <NotFound />,

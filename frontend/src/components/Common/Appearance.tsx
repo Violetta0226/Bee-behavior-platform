@@ -32,7 +32,7 @@ export const SidebarAppearance = () => {
       <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
           <SidebarMenuButton tooltip="外观" data-testid="theme-button">
-            <Icon className="size-4 text-muted-foreground" />
+            <Icon className="size-4 text-muted-foreground" aria-hidden="true" />
             <span>外观</span>
             <span className="sr-only">切换外观主题</span>
           </SidebarMenuButton>
@@ -46,18 +46,18 @@ export const SidebarAppearance = () => {
             data-testid="light-mode"
             onClick={() => setTheme("light")}
           >
-            <Sun className="mr-2 h-4 w-4" />
+            <Sun className="mr-2 h-4 w-4" aria-hidden="true" />
             浅色
           </DropdownMenuItem>
           <DropdownMenuItem
             data-testid="dark-mode"
             onClick={() => setTheme("dark")}
           >
-            <Moon className="mr-2 h-4 w-4" />
+            <Moon className="mr-2 h-4 w-4" aria-hidden="true" />
             深色
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setTheme("system")}>
-            <Monitor className="mr-2 h-4 w-4" />
+            <Monitor className="mr-2 h-4 w-4" aria-hidden="true" />
             跟随系统
           </DropdownMenuItem>
         </DropdownMenuContent>
@@ -74,8 +74,14 @@ export const Appearance = () => {
       <DropdownMenu modal={false}>
         <DropdownMenuTrigger asChild>
           <Button data-testid="theme-button" variant="outline" size="icon">
-            <Sun className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-            <Moon className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+            <Sun
+              className="h-[1.2rem] w-[1.2rem] rotate-0 scale-100 transition-transform dark:-rotate-90 dark:scale-0"
+              aria-hidden="true"
+            />
+            <Moon
+              className="absolute h-[1.2rem] w-[1.2rem] rotate-90 scale-0 transition-transform dark:rotate-0 dark:scale-100"
+              aria-hidden="true"
+            />
             <span className="sr-only">切换外观主题</span>
           </Button>
         </DropdownMenuTrigger>
@@ -84,18 +90,18 @@ export const Appearance = () => {
             data-testid="light-mode"
             onClick={() => setTheme("light")}
           >
-            <Sun className="mr-2 h-4 w-4" />
+            <Sun className="mr-2 h-4 w-4" aria-hidden="true" />
             浅色
           </DropdownMenuItem>
           <DropdownMenuItem
             data-testid="dark-mode"
             onClick={() => setTheme("dark")}
           >
-            <Moon className="mr-2 h-4 w-4" />
+            <Moon className="mr-2 h-4 w-4" aria-hidden="true" />
             深色
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => setTheme("system")}>
-            <Monitor className="mr-2 h-4 w-4" />
+            <Monitor className="mr-2 h-4 w-4" aria-hidden="true" />
             跟随系统
           </DropdownMenuItem>
         </DropdownMenuContent>

@@ -47,6 +47,7 @@ type ResultItem = { id: string; task_id: string }
 type ResultsResponse = { data: ResultItem[]; count: number }
 type LoadMode = "initial" | "manual" | "silent"
 const API_BASE = "/api/v1"
+const ACTIVE_TASK_POLL_INTERVAL_MS = 5000
 
 function getAuthHeaders(): HeadersInit {
   const token = localStorage.getItem("access_token")
@@ -161,8 +162,6 @@ function TasksPage() {
 
   useEffect(() => {
     void loadData("initial")
-    const timer = window.setInterval(() => void loadData("silent"), 2000)
-    return () => window.clearInterval(timer)
   }, [loadData])
   const videoNameMap = useMemo(
     () => new Map(videos.map((v) => [v.id, v.original_filename])),
@@ -172,16 +171,51 @@ function TasksPage() {
     () => new Map(results.map((result) => [result.task_id, result.id])),
     [results],
   )
-  const summary = useMemo(
-    () => ({
+  const summary = useMemo(() => {
+    const next = {
       total: tasks.length,
-      pending: tasks.filter((t) => t.status === "PENDING").length,
-      processing: tasks.filter((t) => t.status === "PROCESSING").length,
-      completed: tasks.filter((t) => t.status === "COMPLETED").length,
-      failed: tasks.filter((t) => t.status === "FAILED").length,
-    }),
-    [tasks],
-  )
+      pending: 0,
+      processing: 0,
+      completed: 0,
+      failed: 0,
+    }
+    for (const task of tasks) {
+      if (task.status === "PENDING") next.pending += 1
+      else if (task.status === "PROCESSING") next.processing += 1
+      else if (task.status === "COMPLETED") next.completed += 1
+      else if (task.status === "FAILED") next.failed += 1
+    }
+    return next
+  }, [tasks])
+  const hasActiveTasks = summary.pending + summary.processing > 0
+
+  useEffect(() => {
+    if (!hasActiveTasks) return
+
+    let stopped = false
+    let timer: number | undefined
+    const schedule = () => {
+      timer = window.setTimeout(() => void poll(), ACTIVE_TASK_POLL_INTERVAL_MS)
+    }
+    const poll = async () => {
+      if (stopped) return
+      if (document.visibilityState === "visible") await loadData("silent")
+      if (!stopped) schedule()
+    }
+    const handleVisibility = () => {
+      if (document.visibilityState !== "visible") return
+      if (timer !== undefined) window.clearTimeout(timer)
+      void poll()
+    }
+
+    schedule()
+    document.addEventListener("visibilitychange", handleVisibility)
+    return () => {
+      stopped = true
+      if (timer !== undefined) window.clearTimeout(timer)
+      document.removeEventListener("visibilitychange", handleVisibility)
+    }
+  }, [hasActiveTasks, loadData])
 
   useResearchReveal(".process-page", `${isLoading}:${tasks.length}`)
 
@@ -235,7 +269,12 @@ function TasksPage() {
             <p className="research-eyebrow">ANALYSIS RECORDS</p>
             <h2 id="records-title">分析记录</h2>
           </div>
-          <p>状态每 2 秒同步一次 · 共 {summary.total} 条</p>
+          <p>
+            {hasActiveTasks
+              ? "活动任务每 5 秒同步"
+              : "当前无活动任务 · 按需刷新"}
+            {" · "}共 {summary.total} 条
+          </p>
         </div>
         {isLoading ? (
           <div
@@ -245,7 +284,10 @@ function TasksPage() {
             aria-busy="true"
           >
             <div className="research-loading-copy">
-              <LoaderCircle className="size-4 animate-spin" />
+              <LoaderCircle
+                className="size-4 animate-spin"
+                aria-hidden="true"
+              />
               正在读取分析过程，记录骨架保持可见…
             </div>
             {[0, 1, 2].map((row) => (

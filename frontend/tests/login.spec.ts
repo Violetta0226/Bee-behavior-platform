@@ -12,7 +12,7 @@ const fillForm = async (page: Page, email: string, password: string) => {
 const logOutFromSidebar = async (page: Page) => {
   await page.getByRole("button", { name: "展开导航" }).click()
   await page.getByTestId("user-menu").click()
-  await page.getByRole("menuitem", { name: "Log out" }).click()
+  await page.getByRole("menuitem", { name: "退出登录" }).click()
   await page.waitForURL("/login")
 }
 

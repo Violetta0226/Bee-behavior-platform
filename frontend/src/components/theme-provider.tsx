@@ -53,6 +53,9 @@ export function ThemeProvider({
 
   const updateTheme = useCallback((newTheme: Theme) => {
     const root = window.document.documentElement
+    const themeColor = window.document.querySelector<HTMLMetaElement>(
+      'meta[name="theme-color"]',
+    )
 
     root.classList.remove("light", "dark")
 
@@ -63,10 +66,20 @@ export function ThemeProvider({
         : "light"
 
       root.classList.add(systemTheme)
+      root.style.colorScheme = systemTheme
+      themeColor?.setAttribute(
+        "content",
+        systemTheme === "dark" ? "#1f252b" : "#f8fafc",
+      )
       return
     }
 
     root.classList.add(newTheme)
+    root.style.colorScheme = newTheme
+    themeColor?.setAttribute(
+      "content",
+      newTheme === "dark" ? "#1f252b" : "#f8fafc",
+    )
   }, [])
 
   useEffect(() => {
