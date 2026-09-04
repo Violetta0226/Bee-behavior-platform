@@ -39,6 +39,6 @@ export async function logOutUser(page: Page) {
     await sidebarToggle.click()
   }
   await page.getByTestId("user-menu").click()
-  await page.getByRole("menuitem", { name: "Log out" }).click()
+  await page.getByRole("menuitem", { name: "退出登录" }).click()
   await page.goto("/login")
 }
