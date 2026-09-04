@@ -9,7 +9,7 @@ import threading
 from pathlib import Path
 from typing import Any, Literal
 
-from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi import Depends, FastAPI, Header, HTTPException, Response
 from pydantic import BaseModel, Field
 
 from behavior.analysis import BehaviorConfig, analyze_behavior, parse_mot, write_outputs
@@ -110,11 +110,30 @@ def _anomaly_count(report: dict[str, Any]) -> int:
 
 
 @app.get("/health")
-def health() -> dict[str, Any]:
+def health(response: Response) -> dict[str, Any]:
     config = MODEL_ROOT / "runtime_config.json"
+    manifest = MODEL_ROOT / "SHA256SUMS"
+    model_files_present = False
+    if config.is_file() and manifest.is_file():
+        try:
+            entries = [
+                line.split(maxsplit=1)[1]
+                for line in manifest.read_text(encoding="utf-8").splitlines()
+                if line.strip()
+            ]
+            model_files_present = bool(entries) and all(
+                (MODEL_ROOT / entry).is_file() for entry in entries
+            )
+        except (IndexError, OSError):
+            model_files_present = False
+    ready = config.is_file() and manifest.is_file() and model_files_present
+    if not ready:
+        response.status_code = 503
     return {
-        "status": "ok" if config.is_file() else "degraded",
+        "status": "ok" if ready else "degraded",
         "model_config_present": config.is_file(),
+        "model_manifest_present": manifest.is_file(),
+        "model_files_present": model_files_present,
         "sample_fps": SAMPLE_FPS,
     }
 
