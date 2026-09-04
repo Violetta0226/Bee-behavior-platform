@@ -1,0 +1,24 @@
+# Vendored competition analysis source
+
+Snapshot copied on 2026-09-04 from the local smart-beekeeping workspace. The
+source directories were `赛事部署包/runtime/bee_runtime`, `赛事部署包/tracking`,
+and `赛事部署包/behavior`. They were uncommitted in that source workspace, so
+file-level SHA-256 values below are the reproducible provenance boundary.
+
+```text
+8f53682b175b590c0fc98c671c0104c68c00d9aadc564e8d7a3c4ad9791a7f6c  analysis-worker/competition/behavior/__init__.py
+3d2438ae92f4746e9ffaa1f837b1fe803f6281091d1f31f8c95643716f257d9a  analysis-worker/competition/behavior/__main__.py
+b874bf6bbe877e4b2c7d495d27c5bea6c5bb7f7a5633cc10711b83eb949c6e1a  analysis-worker/competition/behavior/analysis.py
+f7d7888007c50615c475bfd2514f9750219157e21d91590d3c8584ed515599a9  analysis-worker/competition/behavior/cli.py
+11dd243ae2fbdc23684d9f9cb755efaab7895b6c8e8c7a52a8bb811778cb6152  analysis-worker/competition/runtime/bee_runtime/__init__.py
+8eaf1a4b9a59ba05b048f0e53045a285f307e7a0153d503522d910cc67b44314  analysis-worker/competition/runtime/bee_runtime/cli.py
+942502c0aa9a6e43da20a738ec73d3b5ac030d88a3360377396e5abbf6b46ede  analysis-worker/competition/runtime/bee_runtime/detector.py
+29113508698947cdf89f697999f5e493767a8678b53961d7c150d2f36d5ae0ce  analysis-worker/competition/runtime/bee_runtime/postprocess.py
+5a6b7e20746b5776d3aa229a1c5073ec3112825c97027d36f5c146d9783b7029  analysis-worker/competition/tracking/__init__.py
+7721aafeb5d88b922ffb181937808cd3e86bf932e98ee1c0bfdd5c583d822cf5  analysis-worker/competition/tracking/cli.py
+678c0c6f9cdbae286a09632533a9881ff10b47fe839d08655406cc8db746ea83  analysis-worker/competition/tracking/core.py
+bf3e0536a383e9568fc3c8c8fa5500cc3fceb63da586ab720ca8a51e19b9f455  analysis-worker/competition/tracking/cvat.py
+cdfb437e9fdc0a7a0637395aa319d5d8feba58f19117bee5aaac76d6630672b1  analysis-worker/competition/tracking/mot.py
+7c24f0bf36ca2e8c5066d53ff21668dda859e03a1b7f13702152d26623daa6a3  analysis-worker/competition/tracking/pipeline.py
+```
+

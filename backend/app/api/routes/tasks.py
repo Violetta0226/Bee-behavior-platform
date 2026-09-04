@@ -57,11 +57,7 @@ def create_task(
             detail="Video not found",
         )
 
-    if (
-        not current_user.is_superuser
-        and video.owner_id
-        != current_user.id
-    ):
+    if not current_user.is_superuser and video.owner_id != current_user.id:
         raise HTTPException(
             status_code=403,
             detail="Not enough permissions",
@@ -70,14 +66,9 @@ def create_task(
     # 防止同一视频同时执行多个任务
     active_statement = (
         select(AnalysisTask)
+        .where(AnalysisTask.video_id == task_in.video_id)
         .where(
-            AnalysisTask.video_id
-            == task_in.video_id
-        )
-        .where(
-            col(
-                AnalysisTask.status
-            ).in_(
+            col(AnalysisTask.status).in_(
                 [
                     "PENDING",
                     "PROCESSING",
@@ -86,9 +77,7 @@ def create_task(
         )
     )
 
-    active_task = session.exec(
-        active_statement
-    ).first()
+    active_task = session.exec(active_statement).first()
 
     if active_task:
         raise HTTPException(
@@ -102,10 +91,7 @@ def create_task(
         task_type="VIDEO_ANALYSIS",
         status="PENDING",
         progress=0,
-        model_name=(
-            task_in.model_name
-            or "baseline-v1"
-        ),
+        model_name=(task_in.model_name or "combined-box-detection-20260818"),
     )
 
     session.add(task)
@@ -136,18 +122,11 @@ def read_tasks(
     """
 
     if current_user.is_superuser:
-        count_statement = (
-            select(func.count())
-            .select_from(AnalysisTask)
-        )
+        count_statement = select(func.count()).select_from(AnalysisTask)
 
         statement = (
             select(AnalysisTask)
-            .order_by(
-                col(
-                    AnalysisTask.created_at
-                ).desc()
-            )
+            .order_by(col(AnalysisTask.created_at).desc())
             .offset(skip)
             .limit(limit)
         )
@@ -156,42 +135,23 @@ def read_tasks(
         count_statement = (
             select(func.count())
             .select_from(AnalysisTask)
-            .where(
-                AnalysisTask.owner_id
-                == current_user.id
-            )
+            .where(AnalysisTask.owner_id == current_user.id)
         )
 
         statement = (
             select(AnalysisTask)
-            .where(
-                AnalysisTask.owner_id
-                == current_user.id
-            )
-            .order_by(
-                col(
-                    AnalysisTask.created_at
-                ).desc()
-            )
+            .where(AnalysisTask.owner_id == current_user.id)
+            .order_by(col(AnalysisTask.created_at).desc())
             .offset(skip)
             .limit(limit)
         )
 
-    count = session.exec(
-        count_statement
-    ).one()
+    count = session.exec(count_statement).one()
 
-    tasks = session.exec(
-        statement
-    ).all()
+    tasks = session.exec(statement).all()
 
     return AnalysisTasksPublic(
-        data=[
-            AnalysisTaskPublic.model_validate(
-                task
-            )
-            for task in tasks
-        ],
+        data=[AnalysisTaskPublic.model_validate(task) for task in tasks],
         count=count,
     )
 
@@ -221,10 +181,7 @@ def read_task(
             detail="Task not found",
         )
 
-    if (
-        not current_user.is_superuser
-        and task.owner_id != current_user.id
-    ):
+    if not current_user.is_superuser and task.owner_id != current_user.id:
         raise HTTPException(
             status_code=403,
             detail="Not enough permissions",
@@ -260,10 +217,7 @@ def delete_task(
             detail="Task not found",
         )
 
-    if (
-        not current_user.is_superuser
-        and task.owner_id != current_user.id
-    ):
+    if not current_user.is_superuser and task.owner_id != current_user.id:
         raise HTTPException(
             status_code=403,
             detail="Not enough permissions",
@@ -278,17 +232,9 @@ def delete_task(
             detail="正在执行的分析任务不能删除",
         )
 
-    result_statement = (
-        select(AnalysisResult)
-        .where(
-            AnalysisResult.task_id
-            == task.id
-        )
-    )
+    result_statement = select(AnalysisResult).where(AnalysisResult.task_id == task.id)
 
-    result = session.exec(
-        result_statement
-    ).first()
+    result = session.exec(result_statement).first()
 
     if result:
         session.delete(result)

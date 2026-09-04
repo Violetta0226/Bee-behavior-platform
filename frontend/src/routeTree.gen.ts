@@ -16,10 +16,14 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SignupRouteImport } from './routes/signup'
 import { Route as LayoutIndexRouteImport } from './routes/_layout/index'
 import { Route as LayoutAdminRouteImport } from './routes/_layout/admin'
+import { Route as LayoutAlertsRouteImport } from './routes/_layout/alerts'
+import { Route as LayoutBehaviorRouteImport } from './routes/_layout/behavior'
 import { Route as LayoutItemsRouteImport } from './routes/_layout/items'
+import { Route as LayoutReportsRouteImport } from './routes/_layout/reports'
 import { Route as LayoutResultsRouteImport } from './routes/_layout/results'
 import { Route as LayoutSettingsRouteImport } from './routes/_layout/settings'
 import { Route as LayoutTasksRouteImport } from './routes/_layout/tasks'
+import { Route as LayoutTrackingRouteImport } from './routes/_layout/tracking'
 import { Route as LayoutVideosRouteImport } from './routes/_layout/videos'
 import { Route as LayoutTasksTaskIdRouteImport } from './routes/_layout/tasks_.$taskId'
 import { Route as LayoutVideosVideoIdRouteImport } from './routes/_layout/videos.$videoId'
@@ -58,9 +62,24 @@ const LayoutAdminRoute = LayoutAdminRouteImport.update({
   path: '/admin',
   getParentRoute: () => LayoutRoute,
 } as any)
+const LayoutAlertsRoute = LayoutAlertsRouteImport.update({
+  id: '/alerts',
+  path: '/alerts',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutBehaviorRoute = LayoutBehaviorRouteImport.update({
+  id: '/behavior',
+  path: '/behavior',
+  getParentRoute: () => LayoutRoute,
+} as any)
 const LayoutItemsRoute = LayoutItemsRouteImport.update({
   id: '/items',
   path: '/items',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutReportsRoute = LayoutReportsRouteImport.update({
+  id: '/reports',
+  path: '/reports',
   getParentRoute: () => LayoutRoute,
 } as any)
 const LayoutResultsRoute = LayoutResultsRouteImport.update({
@@ -76,6 +95,11 @@ const LayoutSettingsRoute = LayoutSettingsRouteImport.update({
 const LayoutTasksRoute = LayoutTasksRouteImport.update({
   id: '/tasks',
   path: '/tasks',
+  getParentRoute: () => LayoutRoute,
+} as any)
+const LayoutTrackingRoute = LayoutTrackingRouteImport.update({
+  id: '/tracking',
+  path: '/tracking',
   getParentRoute: () => LayoutRoute,
 } as any)
 const LayoutVideosRoute = LayoutVideosRouteImport.update({
@@ -101,10 +125,14 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/admin': typeof LayoutAdminRoute
+  '/alerts': typeof LayoutAlertsRoute
+  '/behavior': typeof LayoutBehaviorRoute
   '/items': typeof LayoutItemsRoute
+  '/reports': typeof LayoutReportsRoute
   '/results': typeof LayoutResultsRoute
   '/settings': typeof LayoutSettingsRoute
   '/tasks': typeof LayoutTasksRoute
+  '/tracking': typeof LayoutTrackingRoute
   '/videos': typeof LayoutVideosRouteWithChildren
   '/tasks/$taskId': typeof LayoutTasksTaskIdRoute
   '/videos/$videoId': typeof LayoutVideosVideoIdRoute
@@ -115,10 +143,14 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/admin': typeof LayoutAdminRoute
+  '/alerts': typeof LayoutAlertsRoute
+  '/behavior': typeof LayoutBehaviorRoute
   '/items': typeof LayoutItemsRoute
+  '/reports': typeof LayoutReportsRoute
   '/results': typeof LayoutResultsRoute
   '/settings': typeof LayoutSettingsRoute
   '/tasks': typeof LayoutTasksRoute
+  '/tracking': typeof LayoutTrackingRoute
   '/videos': typeof LayoutVideosRouteWithChildren
   '/': typeof LayoutIndexRoute
   '/tasks/$taskId': typeof LayoutTasksTaskIdRoute
@@ -132,10 +164,14 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/signup': typeof SignupRoute
   '/_layout/admin': typeof LayoutAdminRoute
+  '/_layout/alerts': typeof LayoutAlertsRoute
+  '/_layout/behavior': typeof LayoutBehaviorRoute
   '/_layout/items': typeof LayoutItemsRoute
+  '/_layout/reports': typeof LayoutReportsRoute
   '/_layout/results': typeof LayoutResultsRoute
   '/_layout/settings': typeof LayoutSettingsRoute
   '/_layout/tasks': typeof LayoutTasksRoute
+  '/_layout/tracking': typeof LayoutTrackingRoute
   '/_layout/videos': typeof LayoutVideosRouteWithChildren
   '/_layout/': typeof LayoutIndexRoute
   '/_layout/tasks_/$taskId': typeof LayoutTasksTaskIdRoute
@@ -150,10 +186,14 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signup'
     | '/admin'
+    | '/alerts'
+    | '/behavior'
     | '/items'
+    | '/reports'
     | '/results'
     | '/settings'
     | '/tasks'
+    | '/tracking'
     | '/videos'
     | '/tasks/$taskId'
     | '/videos/$videoId'
@@ -164,10 +204,14 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signup'
     | '/admin'
+    | '/alerts'
+    | '/behavior'
     | '/items'
+    | '/reports'
     | '/results'
     | '/settings'
     | '/tasks'
+    | '/tracking'
     | '/videos'
     | '/'
     | '/tasks/$taskId'
@@ -180,10 +224,14 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/signup'
     | '/_layout/admin'
+    | '/_layout/alerts'
+    | '/_layout/behavior'
     | '/_layout/items'
+    | '/_layout/reports'
     | '/_layout/results'
     | '/_layout/settings'
     | '/_layout/tasks'
+    | '/_layout/tracking'
     | '/_layout/videos'
     | '/_layout/'
     | '/_layout/tasks_/$taskId'
@@ -249,11 +297,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LayoutAdminRouteImport
       parentRoute: typeof LayoutRoute
     }
+    '/_layout/alerts': {
+      id: '/_layout/alerts'
+      path: '/alerts'
+      fullPath: '/alerts'
+      preLoaderRoute: typeof LayoutAlertsRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/behavior': {
+      id: '/_layout/behavior'
+      path: '/behavior'
+      fullPath: '/behavior'
+      preLoaderRoute: typeof LayoutBehaviorRouteImport
+      parentRoute: typeof LayoutRoute
+    }
     '/_layout/items': {
       id: '/_layout/items'
       path: '/items'
       fullPath: '/items'
       preLoaderRoute: typeof LayoutItemsRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/reports': {
+      id: '/_layout/reports'
+      path: '/reports'
+      fullPath: '/reports'
+      preLoaderRoute: typeof LayoutReportsRouteImport
       parentRoute: typeof LayoutRoute
     }
     '/_layout/results': {
@@ -275,6 +344,13 @@ declare module '@tanstack/react-router' {
       path: '/tasks'
       fullPath: '/tasks'
       preLoaderRoute: typeof LayoutTasksRouteImport
+      parentRoute: typeof LayoutRoute
+    }
+    '/_layout/tracking': {
+      id: '/_layout/tracking'
+      path: '/tracking'
+      fullPath: '/tracking'
+      preLoaderRoute: typeof LayoutTrackingRouteImport
       parentRoute: typeof LayoutRoute
     }
     '/_layout/videos': {
@@ -315,10 +391,14 @@ const LayoutVideosRouteWithChildren = LayoutVideosRoute._addFileChildren(
 
 interface LayoutRouteChildren {
   LayoutAdminRoute: typeof LayoutAdminRoute
+  LayoutAlertsRoute: typeof LayoutAlertsRoute
+  LayoutBehaviorRoute: typeof LayoutBehaviorRoute
   LayoutItemsRoute: typeof LayoutItemsRoute
+  LayoutReportsRoute: typeof LayoutReportsRoute
   LayoutResultsRoute: typeof LayoutResultsRoute
   LayoutSettingsRoute: typeof LayoutSettingsRoute
   LayoutTasksRoute: typeof LayoutTasksRoute
+  LayoutTrackingRoute: typeof LayoutTrackingRoute
   LayoutVideosRoute: typeof LayoutVideosRouteWithChildren
   LayoutIndexRoute: typeof LayoutIndexRoute
   LayoutTasksTaskIdRoute: typeof LayoutTasksTaskIdRoute
@@ -326,10 +406,14 @@ interface LayoutRouteChildren {
 
 const LayoutRouteChildren: LayoutRouteChildren = {
   LayoutAdminRoute: LayoutAdminRoute,
+  LayoutAlertsRoute: LayoutAlertsRoute,
+  LayoutBehaviorRoute: LayoutBehaviorRoute,
   LayoutItemsRoute: LayoutItemsRoute,
+  LayoutReportsRoute: LayoutReportsRoute,
   LayoutResultsRoute: LayoutResultsRoute,
   LayoutSettingsRoute: LayoutSettingsRoute,
   LayoutTasksRoute: LayoutTasksRoute,
+  LayoutTrackingRoute: LayoutTrackingRoute,
   LayoutVideosRoute: LayoutVideosRouteWithChildren,
   LayoutIndexRoute: LayoutIndexRoute,
   LayoutTasksTaskIdRoute: LayoutTasksTaskIdRoute,

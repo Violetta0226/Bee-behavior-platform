@@ -1,8 +1,9 @@
 import uuid
 from datetime import UTC, datetime
+from typing import Any, Literal
 
-from pydantic import EmailStr
-from sqlalchemy import DateTime, Text
+from pydantic import EmailStr, field_validator
+from sqlalchemy import JSON, Column, DateTime, Text
 from sqlmodel import Field, Relationship, SQLModel
 
 
@@ -112,9 +113,100 @@ class ItemsPublic(SQLModel):
     count: int
 
 
+BehaviorModality = Literal["RGB", "IR", "UNKNOWN"]
+BehaviorMetricStatus = Literal[
+    "descriptive_only_without_human_mot_ground_truth",
+    "validated_against_human_mot_ground_truth",
+]
+
+
+class BehaviorReportImport(SQLModel):
+    report: dict[str, Any]
+    source_sha256: str = Field(min_length=64, max_length=64)
+    source_path: str | None = Field(default=None, max_length=1024)
+    modality: BehaviorModality = "UNKNOWN"
+    model_version: str | None = Field(default=None, max_length=255)
+    ground_truth_version: str | None = Field(default=None, max_length=255)
+    metric_status: BehaviorMetricStatus = (
+        "descriptive_only_without_human_mot_ground_truth"
+    )
+
+    @field_validator("source_sha256")
+    @classmethod
+    def validate_source_sha256(cls, value: str) -> str:
+        if any(character not in "0123456789abcdefABCDEF" for character in value):
+            raise ValueError("source_sha256 must contain only hexadecimal characters")
+        return value.lower()
+
+
+class BehaviorReport(SQLModel, table=True):
+    __tablename__ = "behavior_report"
+
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True)
+    sequence_id: str = Field(index=True, max_length=255)
+    schema_version: str = Field(max_length=32)
+    source: str | None = Field(default=None, max_length=1024)
+    source_sha256: str = Field(unique=True, index=True, max_length=64)
+    modality: str = Field(default="UNKNOWN", max_length=16)
+    model_version: str | None = Field(default=None, max_length=255)
+    ground_truth_version: str | None = Field(default=None, max_length=255)
+    metric_status: str = Field(max_length=128)
+    duration_seconds: float
+    detection_count: int
+    track_count: int
+    entry_count: int | None = None
+    exit_count: int | None = None
+    anomaly_window_count: int = 0
+    payload: dict[str, Any] = Field(sa_column=Column(JSON, nullable=False))
+    created_at: datetime = Field(
+        default_factory=get_datetime_utc,
+        sa_type=DateTime(timezone=True),  # type: ignore
+    )
+
+
+class BehaviorReportPublic(SQLModel):
+    id: uuid.UUID
+    sequence_id: str
+    schema_version: str
+    source: str | None
+    source_sha256: str
+    modality: str
+    model_version: str | None
+    ground_truth_version: str | None
+    metric_status: str
+    duration_seconds: float
+    detection_count: int
+    track_count: int
+    entry_count: int | None
+    exit_count: int | None
+    anomaly_window_count: int
+    created_at: datetime
+
+
+class BehaviorReportDetail(BehaviorReportPublic):
+    payload: dict[str, Any]
+
+
+class BehaviorReportsPublic(SQLModel):
+    data: list[BehaviorReportPublic]
+    count: int
+
+
+class DashboardSummary(SQLModel):
+    video_count: int
+    analysis_report_count: int
+    tracked_individual_count: int
+    anomaly_window_count: int
+    entry_count: int
+    exit_count: int
+    latest_report_at: datetime | None
+
+
 # Generic message
 class Message(SQLModel):
     message: str
+
+
 # Shared properties for videos
 class VideoBase(SQLModel):
     original_filename: str = Field(
@@ -179,6 +271,8 @@ class VideoPublic(VideoBase):
 class VideosPublic(SQLModel):
     data: list[VideoPublic]
     count: int
+
+
 # Shared properties for analysis tasks
 class AnalysisTaskBase(SQLModel):
     task_type: str = Field(
@@ -246,6 +340,7 @@ class AnalysisTask(AnalysisTaskBase, table=True):
         sa_type=DateTime(timezone=True),  # type: ignore
     )
 
+
 class AnalysisTaskCreate(SQLModel):
     video_id: uuid.UUID
 
@@ -253,6 +348,8 @@ class AnalysisTaskCreate(SQLModel):
         default=None,
         max_length=100,
     )
+
+
 # Properties returned by the API
 class AnalysisTaskPublic(AnalysisTaskBase):
     id: uuid.UUID
@@ -267,6 +364,8 @@ class AnalysisTaskPublic(AnalysisTaskBase):
 class AnalysisTasksPublic(SQLModel):
     data: list[AnalysisTaskPublic]
     count: int
+
+
 # Shared properties for analysis results
 class AnalysisResultBase(SQLModel):
     # 检测到的蜜蜂个体数量
@@ -388,7 +487,9 @@ class AnalysisResultPublic(
 
 class AnalysisResultsPublic(SQLModel):
     data: list[AnalysisResultPublic]
-    count: int 
+    count: int
+
+
 # JSON payload containing access token
 class Token(SQLModel):
     access_token: str

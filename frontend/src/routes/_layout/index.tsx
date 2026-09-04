@@ -73,6 +73,23 @@ type AnalysisResultItem = {
 
 type AnalysisResultsResponse = { data: AnalysisResultItem[]; count: number }
 
+type BehaviorReportItem = {
+  id: string
+  sequence_id: string
+  source_sha256: string
+  modality: string
+  model_version: string | null
+  metric_status: string
+  detection_count: number
+  track_count: number
+  entry_count: number | null
+  exit_count: number | null
+  anomaly_window_count: number
+  created_at: string
+}
+
+type BehaviorReportsResponse = { data: BehaviorReportItem[]; count: number }
+
 type ObservationRecord = {
   video: VideoItem
   task: AnalysisTaskItem | null
@@ -157,6 +174,9 @@ function DashboardPage() {
   const [videos, setVideos] = useState<VideoItem[]>([])
   const [tasks, setTasks] = useState<AnalysisTaskItem[]>([])
   const [results, setResults] = useState<AnalysisResultItem[]>([])
+  const [behaviorReports, setBehaviorReports] = useState<BehaviorReportItem[]>(
+    [],
+  )
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -170,11 +190,12 @@ function DashboardPage() {
 
     try {
       const headers = getAuthHeaders()
-      const [videosResponse, tasksResponse, resultsResponse] =
+      const [videosResponse, tasksResponse, resultsResponse, behaviorResponse] =
         await Promise.all([
           fetch(`${API_BASE}/videos/?skip=0&limit=100`, { headers }),
           fetch(`${API_BASE}/tasks/?skip=0&limit=100`, { headers }),
           fetch(`${API_BASE}/results/?skip=0&limit=100`, { headers }),
+          fetch(`${API_BASE}/behavior-reports/?skip=0&limit=100`, { headers }),
         ])
 
       if (!videosResponse.ok) {
@@ -186,15 +207,21 @@ function DashboardPage() {
       if (!resultsResponse.ok) {
         throw new Error(`读取分析结果失败：${resultsResponse.status}`)
       }
+      if (!behaviorResponse.ok) {
+        throw new Error(`读取行为报告失败：${behaviorResponse.status}`)
+      }
 
       const videosData = (await videosResponse.json()) as VideosResponse
       const tasksData = (await tasksResponse.json()) as AnalysisTasksResponse
       const resultsData =
         (await resultsResponse.json()) as AnalysisResultsResponse
+      const behaviorData =
+        (await behaviorResponse.json()) as BehaviorReportsResponse
 
       setVideos(videosData.data)
       setTasks(tasksData.data)
       setResults(resultsData.data)
+      setBehaviorReports(behaviorData.data)
     } catch (error) {
       console.error(error)
       setErrorMessage(
@@ -244,9 +271,19 @@ function DashboardPage() {
       }))
   }, [videos, tasks, results])
 
+  const importedBehaviorResults = useMemo<AnalysisResultItem[]>(
+    () => behaviorReports.map(behaviorReportAsResult),
+    [behaviorReports],
+  )
+
+  const allResults = useMemo(
+    () => [...results, ...importedBehaviorResults],
+    [results, importedBehaviorResults],
+  )
+
   const latestResult = useMemo(
-    () => [...results].sort(sortNewestFirst)[0] ?? null,
-    [results],
+    () => [...allResults].sort(sortNewestFirst)[0] ?? null,
+    [allResults],
   )
 
   const latestVideo = useMemo(
@@ -261,14 +298,14 @@ function DashboardPage() {
     const timestamps = [
       ...videos.map((video) => video.created_at),
       ...tasks.map((task) => task.created_at),
-      ...results.map((result) => result.created_at),
+      ...allResults.map((result) => result.created_at),
     ]
       .filter((value): value is string => Boolean(value))
       .map((value) => new Date(value).getTime())
       .filter(Number.isFinite)
 
     return timestamps.length > 0 ? new Date(Math.max(...timestamps)) : null
-  }, [videos, tasks, results])
+  }, [videos, tasks, allResults])
 
   if (isLoading) return <DashboardLoading />
 
@@ -436,7 +473,7 @@ function DashboardPage() {
                 </p>
                 <ObservationReading
                   result={latestResult}
-                  resultCount={results.length}
+                  resultCount={allResults.length}
                 />
               </div>
             </div>
@@ -540,7 +577,7 @@ function DashboardPage() {
               data-observation-reveal="colony"
               data-observation-delay="1"
             >
-              <BeePulseChart results={results} compact />
+              <BeePulseChart results={allResults} compact />
             </div>
             <div
               className="analysis-zone analysis-zone--hive"
@@ -568,7 +605,11 @@ function DashboardPage() {
                   从观察样本到分析结果，确认读数完整可追溯。
                 </p>
               </div>
-              <EvidenceChain videos={videos} tasks={tasks} results={results} />
+              <EvidenceChain
+                videos={videos}
+                tasks={tasks}
+                results={allResults}
+              />
             </div>
           </div>
         </ResearchContentFrame>
@@ -992,6 +1033,14 @@ function getColonyState(
             : "建立巢内或巢外观测记录后，即可开始记录蜂群活动节律。",
     }
   }
+  if (result.activity_index === null) {
+    return {
+      label:
+        result.abnormal_event_count > 0 ? "存在关注记录" : "真实记录已入库",
+      tone: result.abnormal_event_count > 0 ? "attention" : "stable",
+      note: `最近报告包含 ${result.valid_tracks} 条序列内轨迹；活动指数未标定，不强制映射到 0–1 区间。`,
+    }
+  }
   if (result.abnormal_event_count > 0 || failedCount > 0) {
     return {
       label: "存在关注记录",
@@ -1021,6 +1070,12 @@ function getColonyState(
 }
 
 function getSummarySentence(result: AnalysisResultItem) {
+  if (result.activity_index === null) {
+    const anomaly = result.abnormal_event_count
+      ? `其中 ${result.abnormal_event_count} 个时间窗需要复核`
+      : "未检出达到阈值的异常时间窗"
+    return `已记录 ${result.detected_individuals} 个检测框与 ${result.valid_tracks} 条序列内轨迹，${anomaly}。`
+  }
   const net = result.entry_count - result.exit_count
   const flow =
     net > 0
@@ -1039,6 +1094,36 @@ function getSummarySentence(result: AnalysisResultItem) {
       ? `，有 ${result.abnormal_event_count} 条记录需要复核`
       : "，未见异常记录"
   return `${activity}，${flow}${abnormal}。`
+}
+
+function behaviorReportAsResult(
+  report: BehaviorReportItem,
+): AnalysisResultItem {
+  return {
+    id: report.id,
+    task_id: report.id,
+    video_id: `behavior:${report.sequence_id}`,
+    owner_id: "imported-behavior-report",
+    detected_individuals: report.detection_count,
+    valid_tracks: report.track_count,
+    entry_count: report.entry_count ?? 0,
+    exit_count: report.exit_count ?? 0,
+    average_speed: null,
+    activity_index: null,
+    abnormal_event_count: report.anomaly_window_count,
+    metrics_json: JSON.stringify({
+      source: "behavior_report",
+      report_sha256: report.source_sha256,
+      metric_status: report.metric_status,
+      modality: report.modality,
+      model: report.model_version,
+      gate_configured:
+        report.entry_count !== null && report.exit_count !== null,
+    }),
+    result_video_path: null,
+    result_json_path: null,
+    created_at: report.created_at,
+  }
 }
 
 function sortNewestFirst(

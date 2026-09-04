@@ -32,18 +32,11 @@ def read_results(
     """
 
     if current_user.is_superuser:
-        count_statement = (
-            select(func.count())
-            .select_from(AnalysisResult)
-        )
+        count_statement = select(func.count()).select_from(AnalysisResult)
 
         statement = (
             select(AnalysisResult)
-            .order_by(
-                col(
-                    AnalysisResult.created_at
-                ).desc()
-            )
+            .order_by(col(AnalysisResult.created_at).desc())
             .offset(skip)
             .limit(limit)
         )
@@ -52,42 +45,23 @@ def read_results(
         count_statement = (
             select(func.count())
             .select_from(AnalysisResult)
-            .where(
-                AnalysisResult.owner_id
-                == current_user.id
-            )
+            .where(AnalysisResult.owner_id == current_user.id)
         )
 
         statement = (
             select(AnalysisResult)
-            .where(
-                AnalysisResult.owner_id
-                == current_user.id
-            )
-            .order_by(
-                col(
-                    AnalysisResult.created_at
-                ).desc()
-            )
+            .where(AnalysisResult.owner_id == current_user.id)
+            .order_by(col(AnalysisResult.created_at).desc())
             .offset(skip)
             .limit(limit)
         )
 
-    count = session.exec(
-        count_statement
-    ).one()
+    count = session.exec(count_statement).one()
 
-    results = session.exec(
-        statement
-    ).all()
+    results = session.exec(statement).all()
 
     return AnalysisResultsPublic(
-        data=[
-            AnalysisResultPublic.model_validate(
-                result
-            )
-            for result in results
-        ],
+        data=[AnalysisResultPublic.model_validate(result) for result in results],
         count=count,
     )
 
@@ -106,17 +80,9 @@ def read_result_by_task(
     根据分析任务 ID 获取结果。
     """
 
-    statement = (
-        select(AnalysisResult)
-        .where(
-            AnalysisResult.task_id
-            == task_id
-        )
-    )
+    statement = select(AnalysisResult).where(AnalysisResult.task_id == task_id)
 
-    result = session.exec(
-        statement
-    ).first()
+    result = session.exec(statement).first()
 
     if not result:
         raise HTTPException(
@@ -124,11 +90,7 @@ def read_result_by_task(
             detail="Analysis result not found",
         )
 
-    if (
-        not current_user.is_superuser
-        and result.owner_id
-        != current_user.id
-    ):
+    if not current_user.is_superuser and result.owner_id != current_user.id:
         raise HTTPException(
             status_code=403,
             detail="Not enough permissions",
@@ -162,11 +124,7 @@ def read_result(
             detail="Analysis result not found",
         )
 
-    if (
-        not current_user.is_superuser
-        and result.owner_id
-        != current_user.id
-    ):
+    if not current_user.is_superuser and result.owner_id != current_user.id:
         raise HTTPException(
             status_code=403,
             detail="Not enough permissions",

@@ -3,14 +3,16 @@ from pathlib import Path
 from typing import Any
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
-from sqlmodel import col, func, select
 from fastapi.responses import FileResponse
+from sqlmodel import col, func, select
+
 from app.api.deps import CurrentUser, SessionDep
+from app.core.config import settings
 from app.models import Message, Video, VideoPublic, VideosPublic
 
 router = APIRouter(prefix="/videos", tags=["videos"])
 
-UPLOAD_DIR = Path("/app/uploads/videos")
+UPLOAD_DIR = Path(settings.VIDEO_UPLOAD_DIR)
 
 ALLOWED_EXTENSIONS = {
     ".mp4",
@@ -67,10 +69,7 @@ def read_videos(
     videos = session.exec(statement).all()
 
     return VideosPublic(
-        data=[
-            VideoPublic.model_validate(video)
-            for video in videos
-        ],
+        data=[VideoPublic.model_validate(video) for video in videos],
         count=count,
     )
 
@@ -130,6 +129,15 @@ async def upload_video(
             while chunk := await file.read(1024 * 1024):
                 output.write(chunk)
                 file_size += len(chunk)
+                if file_size > settings.MAX_VIDEO_UPLOAD_BYTES:
+                    raise HTTPException(
+                        status_code=413,
+                        detail="视频文件超过上传大小限制",
+                    )
+
+    except HTTPException:
+        destination.unlink(missing_ok=True)
+        raise
 
     except Exception as exc:
         if destination.exists():
@@ -168,6 +176,8 @@ async def upload_video(
         raise
 
     return video
+
+
 @router.get(
     "/{video_id}",
     response_model=VideoPublic,
@@ -193,10 +203,7 @@ def read_video(
             detail="Video not found",
         )
 
-    if (
-        not current_user.is_superuser
-        and video.owner_id != current_user.id
-    ):
+    if not current_user.is_superuser and video.owner_id != current_user.id:
         raise HTTPException(
             status_code=403,
             detail="Not enough permissions",
@@ -230,18 +237,13 @@ def read_video_file(
             detail="Video not found",
         )
 
-    if (
-        not current_user.is_superuser
-        and video.owner_id != current_user.id
-    ):
+    if not current_user.is_superuser and video.owner_id != current_user.id:
         raise HTTPException(
             status_code=403,
             detail="Not enough permissions",
         )
 
-    file_path = Path(
-        video.file_path
-    )
+    file_path = Path(video.file_path)
 
     if not file_path.is_file():
         raise HTTPException(
@@ -251,11 +253,9 @@ def read_video_file(
 
     return FileResponse(
         path=file_path,
-        media_type=(
-            video.content_type
-            or "application/octet-stream"
-        ),
+        media_type=(video.content_type or "application/octet-stream"),
     )
+
 
 @router.delete("/{video_id}")
 def delete_video(
@@ -276,22 +276,23 @@ def delete_video(
             detail="Video not found",
         )
 
-    if (
-        not current_user.is_superuser
-        and video.owner_id != current_user.id
-    ):
+    if not current_user.is_superuser and video.owner_id != current_user.id:
         raise HTTPException(
             status_code=403,
             detail="Not enough permissions",
         )
 
-    video_path = Path(video.file_path)
-
-    if video_path.exists():
-        video_path.unlink()
-
     session.delete(video)
     session.commit()
+
+    video_path = Path(video.file_path)
+    try:
+        video_path.unlink(missing_ok=True)
+    except OSError:
+        # The database remains authoritative. A failed filesystem cleanup can
+        # be retried by maintenance without leaving a record pointing at a
+        # missing file.
+        pass
 
     return Message(
         message="Video deleted successfully",
