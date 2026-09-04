@@ -66,15 +66,21 @@ def continuity_statistics(
         "detection_count": detection_count,
         "mot_row_count": len(rows),
         "unique_track_count": len(values),
-        "mean_detections_per_frame": detection_count / frame_count if frame_count else 0.0,
+        "mean_detections_per_frame": detection_count / frame_count
+        if frame_count
+        else 0.0,
         "mean_tracks_per_frame": len(rows) / frame_count if frame_count else 0.0,
         "mean_track_observations": statistics.fmean(values) if values else 0.0,
         "median_track_observations": statistics.median(values) if values else 0.0,
         "max_track_observations": max(values, default=0),
         "single_observation_track_count": singleton_count,
-        "single_observation_track_fraction": singleton_count / len(values) if values else 0.0,
+        "single_observation_track_fraction": singleton_count / len(values)
+        if values
+        else 0.0,
         "elapsed_seconds": elapsed_seconds,
-        "wall_ms_per_frame": elapsed_seconds * 1000.0 / frame_count if frame_count else 0.0,
+        "wall_ms_per_frame": elapsed_seconds * 1000.0 / frame_count
+        if frame_count
+        else 0.0,
     }
 
 
@@ -92,7 +98,9 @@ def run_sequence(
 
     image_dir = sequence_dir / "img1"
     images = sorted(
-        path for path in image_dir.iterdir() if path.suffix.lower() in {".jpg", ".jpeg", ".png"}
+        path
+        for path in image_dir.iterdir()
+        if path.suffix.lower() in {".jpg", ".jpeg", ".png"}
     )
     if limit is not None:
         images = images[:limit]
@@ -108,7 +116,10 @@ def run_sequence(
     all_tracks: list[TrackResult] = []
     detection_count = 0
     started = time.perf_counter()
-    with detections_path.open("w", encoding="utf-8") as detection_stream, MOTWriter(mot_path) as writer:
+    with (
+        detections_path.open("w", encoding="utf-8") as detection_stream,
+        MOTWriter(mot_path) as writer,
+    ):
         for fallback, image_path in enumerate(images, start=1):
             frame_id = frame_id_from_path(image_path, fallback)
             image = load_rgb_image(image_path)
@@ -116,7 +127,11 @@ def run_sequence(
             detection_count += len(detections)
             detection_stream.write(
                 json.dumps(
-                    {"frame_id": frame_id, "image": image_path.name, "detections": detections},
+                    {
+                        "frame_id": frame_id,
+                        "image": image_path.name,
+                        "detections": detections,
+                    },
                     ensure_ascii=False,
                     separators=(",", ":"),
                 )
@@ -180,7 +195,12 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     values = dict(PRESETS[args.modality])
-    for name in ("high_confidence", "low_confidence", "new_track_confidence", "max_lost"):
+    for name in (
+        "high_confidence",
+        "low_confidence",
+        "new_track_confidence",
+        "max_lost",
+    ):
         value = getattr(args, name)
         if value is not None:
             values[name] = value
@@ -198,7 +218,10 @@ def main(argv: list[str] | None = None) -> int:
             args.allow_cpu,
         )
     except (OSError, ValueError, RuntimeError) as exc:
-        print(json.dumps({"ok": False, "error": str(exc)}, ensure_ascii=False), file=sys.stderr)
+        print(
+            json.dumps({"ok": False, "error": str(exc)}, ensure_ascii=False),
+            file=sys.stderr,
+        )
         return 2
     print(json.dumps({"ok": True, **report["statistics"]}, ensure_ascii=False))
     return 0

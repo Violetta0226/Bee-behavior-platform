@@ -78,18 +78,12 @@
         "backgroundColor": "color(srgb 0.495922 0.535843 0.483922)"
       }
     ],
-    "distinctNodeRoles": [
-      null
-    ],
+    "distinctNodeRoles": [null],
     "taskHref": "/tasks/a4ae8ff5-fec4-4a04-97c0-2114e2395264"
   },
   "taskDetail": {
     "url": "http://localhost:8000/tasks/a4ae8ff5-fec4-4a04-97c0-2114e2395264",
-    "headings": [
-      "任务详情",
-      "任务信息",
-      "关联分析结果"
-    ],
+    "headings": ["任务详情", "任务信息", "关联分析结果"],
     "hasProcessInspector": false,
     "hasReadingGrid": false,
     "links": [

@@ -20,7 +20,6 @@ from .postprocess import (
     filter_candidates,
     non_max_suppression,
     restore_original_coordinates,
-    select_top,
     select_top_indices,
 )
 
@@ -123,10 +122,14 @@ class BeeDetector:
             try:
                 ort.preload_dlls(directory=str(self.base_dir))
             except Exception as exc:
-                raise ModelRuntimeError("failed to preload bundled CUDA/cuDNN DLLs") from exc
+                raise ModelRuntimeError(
+                    "failed to preload bundled CUDA/cuDNN DLLs"
+                ) from exc
         available = ort.get_available_providers()
         if require_cuda and "CUDAExecutionProvider" not in available:
-            raise ModelRuntimeError("CUDAExecutionProvider is unavailable; refusing silent CPU fallback")
+            raise ModelRuntimeError(
+                "CUDAExecutionProvider is unavailable; refusing silent CPU fallback"
+            )
         providers: list[Any] = []
         if "CUDAExecutionProvider" in available:
             providers.append(
@@ -151,11 +154,17 @@ class BeeDetector:
         options.inter_op_num_threads = int(self.config.get("inter_op_num_threads", 1))
         try:
             with suppress_native_stdout():
-                session = ort.InferenceSession(str(model_path), sess_options=options, providers=providers)
+                session = ort.InferenceSession(
+                    str(model_path), sess_options=options, providers=providers
+                )
         except Exception as exc:
-            raise ModelRuntimeError(f"failed to initialize {modality} ONNX model") from exc
+            raise ModelRuntimeError(
+                f"failed to initialize {modality} ONNX model"
+            ) from exc
         if require_cuda and "CUDAExecutionProvider" not in session.get_providers():
-            raise ModelRuntimeError("ONNX session did not activate CUDAExecutionProvider")
+            raise ModelRuntimeError(
+                "ONNX session did not activate CUDAExecutionProvider"
+            )
         value = (session, session.get_inputs()[0].name)
         self.sessions[modality] = value
         return value
@@ -185,7 +194,9 @@ class BeeDetector:
                 output = session.run(None, {input_name: tensor})[0]
         except Exception as exc:
             raise ModelRuntimeError(f"{modality} ONNX inference failed") from exc
-        raw_boxes, raw_scores, classes, output_is_e2e = decode_yolo_output(output, image_size)
+        raw_boxes, raw_scores, classes, output_is_e2e = decode_yolo_output(
+            output, image_size
+        )
         raw_boxes, raw_scores = filter_candidates(
             raw_boxes,
             raw_scores,
@@ -215,7 +226,9 @@ class BeeDetector:
                 boxes = raw_boxes[source_indices]
             scores = raw_scores[source_indices]
         else:
-            source_indices = select_top_indices(raw_scores, int(settings["max_detections"]))
+            source_indices = select_top_indices(
+                raw_scores, int(settings["max_detections"])
+            )
             boxes, scores = raw_boxes[source_indices], raw_scores[source_indices]
         boxes = restore_original_coordinates(boxes, ratio, pad_x, pad_y, width, height)
         boxes = calibrate_xyxy(boxes, width, height, self._calibration(modality))

@@ -12,7 +12,13 @@ import time
 from pathlib import Path
 from typing import Any, Callable, Sequence, TextIO
 
-from .detector import BeeDetector, CorruptImageError, ModelRuntimeError, infer_modality, load_rgb_image
+from .detector import (
+    BeeDetector,
+    CorruptImageError,
+    ModelRuntimeError,
+    infer_modality,
+    load_rgb_image,
+)
 
 
 EXIT_SUCCESS = 0
@@ -29,7 +35,9 @@ def runtime_root() -> Path:
 def parser() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser(add_help=True)
     result.add_argument("--image_path", default=None)
-    result.add_argument("--modality", choices=("auto", "rgb", "infrared"), default="auto")
+    result.add_argument(
+        "--modality", choices=("auto", "rgb", "infrared"), default="auto"
+    )
     result.add_argument("--task", choices=("auto", "detect", "track"), default="auto")
     result.add_argument("--sequence_id", default=None)
     result.add_argument("--frame_id", type=int, default=None)
@@ -50,18 +58,30 @@ def failure(message: str, processing_time_ms: int) -> dict[str, Any]:
 
 def infer_task(path: Path) -> str:
     parts = [part.lower() for part in path.parts]
-    return "track" if path.parent.name.lower() == "img1" or "tracking" in parts else "detect"
+    return (
+        "track"
+        if path.parent.name.lower() == "img1" or "tracking" in parts
+        else "detect"
+    )
 
 
-def tracking_identity(path: Path, sequence_id: str | None, frame_id: int | None) -> tuple[str, int]:
-    sequence = sequence_id or (path.parent.parent.name if path.parent.name.lower() == "img1" else path.parent.name)
+def tracking_identity(
+    path: Path, sequence_id: str | None, frame_id: int | None
+) -> tuple[str, int]:
+    sequence = sequence_id or (
+        path.parent.parent.name
+        if path.parent.name.lower() == "img1"
+        else path.parent.name
+    )
     if not sequence:
         raise ValueError("tracking sequence_id cannot be empty")
     if frame_id is None:
         try:
             frame_id = int(path.stem)
         except ValueError as exc:
-            raise ValueError("tracking frame_id is required for a non-numeric filename") from exc
+            raise ValueError(
+                "tracking frame_id is required for a non-numeric filename"
+            ) from exc
     if frame_id < 1:
         raise ValueError("tracking frame_id must be positive")
     return sequence, frame_id
@@ -74,7 +94,9 @@ def tracker_state_path(state_dir: Path, sequence_id: str) -> Path:
 
 def save_tracker_state(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    descriptor, temporary_name = tempfile.mkstemp(prefix=path.name + ".", suffix=".tmp", dir=path.parent)
+    descriptor, temporary_name = tempfile.mkstemp(
+        prefix=path.name + ".", suffix=".tmp", dir=path.parent
+    )
     try:
         with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
             json.dump(payload, handle, ensure_ascii=False, separators=(",", ":"))
@@ -115,7 +137,12 @@ def track_detections(
     return [
         {
             "track_id": item.track_id,
-            "bbox": [round(item.x, 3), round(item.y, 3), round(item.width, 3), round(item.height, 3)],
+            "bbox": [
+                round(item.x, 3),
+                round(item.y, 3),
+                round(item.width, 3),
+                round(item.height, 3),
+            ],
             "label": "bee",
             "class_id": 0,
             "confidence": round(item.confidence, 6),
@@ -145,14 +172,24 @@ def run(
         image = image_loader(path)
         config_path = args.config or (runtime_root() / "runtime_config.json")
         detector = detector_factory(config_path)
-        chroma_threshold = float(detector.config.get("auto_modality_chroma_threshold", 4.0))
-        modality = args.modality if args.modality != "auto" else infer_modality(image, path, chroma_threshold)
+        chroma_threshold = float(
+            detector.config.get("auto_modality_chroma_threshold", 4.0)
+        )
+        modality = (
+            args.modality
+            if args.modality != "auto"
+            else infer_modality(image, path, chroma_threshold)
+        )
         detections = detector.detect(image, modality)
         elapsed = max(0, int(round((time.perf_counter() - started) * 1000)))
         task = args.task if args.task != "auto" else infer_task(path)
         if task == "track":
-            sequence_id, frame_id = tracking_identity(path, args.sequence_id, args.frame_id)
-            state_dir = args.state_dir or (Path(tempfile.gettempdir()) / "bee_algorithm_tracking_state")
+            sequence_id, frame_id = tracking_identity(
+                path, args.sequence_id, args.frame_id
+            )
+            state_dir = args.state_dir or (
+                Path(tempfile.gettempdir()) / "bee_algorithm_tracking_state"
+            )
             tracks = track_detections(
                 detections,
                 modality,
@@ -188,7 +225,13 @@ def run(
         elapsed = max(0, int(round((time.perf_counter() - started) * 1000)))
         emit(failure("image file is damaged or unsupported", elapsed), stream)
         return EXIT_CORRUPT_IMAGE
-    except (ModelRuntimeError, OSError, ValueError, KeyError, json.JSONDecodeError) as exc:
+    except (
+        ModelRuntimeError,
+        OSError,
+        ValueError,
+        KeyError,
+        json.JSONDecodeError,
+    ) as exc:
         elapsed = max(0, int(round((time.perf_counter() - started) * 1000)))
         emit(failure(f"runtime error: {exc}", elapsed), stream)
         return EXIT_RUNTIME_ERROR

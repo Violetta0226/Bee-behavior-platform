@@ -46,13 +46,19 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="Quantify individual and group behavior from bee MOT tracks."
     )
-    parser.add_argument("--input", type=Path, required=True, help="MOT txt or CSV input")
+    parser.add_argument(
+        "--input", type=Path, required=True, help="MOT txt or CSV input"
+    )
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--fps", type=float, required=True)
     parser.add_argument("--sequence-id", default=None)
     parser.add_argument("--pixels-per-mm", type=float, default=None)
-    parser.add_argument("--roi", type=parse_roi, default=None, help="x1,y1,x2,y2 in pixels")
-    parser.add_argument("--gate", type=parse_gate, default=None, help="directed x1,y1,x2,y2 line")
+    parser.add_argument(
+        "--roi", type=parse_roi, default=None, help="x1,y1,x2,y2 in pixels"
+    )
+    parser.add_argument(
+        "--gate", type=parse_gate, default=None, help="directed x1,y1,x2,y2 line"
+    )
     parser.add_argument(
         "--gate-entry-side",
         choices=("positive", "negative"),
@@ -110,7 +116,10 @@ def main(argv: list[str] | None = None) -> int:
         )
         outputs = write_outputs(result, args.output_dir)
     except (OSError, ValueError) as exc:
-        print(json.dumps({"ok": False, "error": str(exc)}, ensure_ascii=False), file=sys.stderr)
+        print(
+            json.dumps({"ok": False, "error": str(exc)}, ensure_ascii=False),
+            file=sys.stderr,
+        )
         return 2
     print(
         json.dumps(

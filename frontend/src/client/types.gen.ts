@@ -5,6 +5,360 @@ export type ClientOptions = {
 };
 
 /**
+ * AnalysisResultPublic
+ */
+export type AnalysisResultPublic = {
+    /**
+     * Detected Individuals
+     */
+    detected_individuals?: number;
+    /**
+     * Valid Tracks
+     */
+    valid_tracks?: number;
+    /**
+     * Entry Count
+     */
+    entry_count?: number;
+    /**
+     * Exit Count
+     */
+    exit_count?: number;
+    /**
+     * Average Speed
+     */
+    average_speed?: number | null;
+    /**
+     * Activity Index
+     */
+    activity_index?: number | null;
+    /**
+     * Abnormal Event Count
+     */
+    abnormal_event_count?: number;
+    /**
+     * Metrics Json
+     */
+    metrics_json?: string | null;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Task Id
+     */
+    task_id: string;
+    /**
+     * Video Id
+     */
+    video_id: string;
+    /**
+     * Owner Id
+     */
+    owner_id: string;
+    /**
+     * Result Video Path
+     */
+    result_video_path?: string | null;
+    /**
+     * Result Json Path
+     */
+    result_json_path?: string | null;
+    /**
+     * Created At
+     */
+    created_at?: string | null;
+};
+
+/**
+ * AnalysisResultsPublic
+ */
+export type AnalysisResultsPublic = {
+    /**
+     * Data
+     */
+    data: Array<AnalysisResultPublic>;
+    /**
+     * Count
+     */
+    count: number;
+};
+
+/**
+ * AnalysisTaskCreate
+ */
+export type AnalysisTaskCreate = {
+    /**
+     * Video Id
+     */
+    video_id: string;
+    /**
+     * Model Name
+     */
+    model_name?: string | null;
+};
+
+/**
+ * AnalysisTaskPublic
+ */
+export type AnalysisTaskPublic = {
+    /**
+     * Task Type
+     */
+    task_type?: string;
+    /**
+     * Status
+     */
+    status?: string;
+    /**
+     * Progress
+     */
+    progress?: number;
+    /**
+     * Model Name
+     */
+    model_name?: string | null;
+    /**
+     * Error Message
+     */
+    error_message?: string | null;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Video Id
+     */
+    video_id: string;
+    /**
+     * Owner Id
+     */
+    owner_id: string;
+    /**
+     * Created At
+     */
+    created_at?: string | null;
+    /**
+     * Started At
+     */
+    started_at?: string | null;
+    /**
+     * Completed At
+     */
+    completed_at?: string | null;
+};
+
+/**
+ * AnalysisTasksPublic
+ */
+export type AnalysisTasksPublic = {
+    /**
+     * Data
+     */
+    data: Array<AnalysisTaskPublic>;
+    /**
+     * Count
+     */
+    count: number;
+};
+
+/**
+ * BehaviorReportDetail
+ */
+export type BehaviorReportDetail = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Sequence Id
+     */
+    sequence_id: string;
+    /**
+     * Schema Version
+     */
+    schema_version: string;
+    /**
+     * Source
+     */
+    source: string | null;
+    /**
+     * Source Sha256
+     */
+    source_sha256: string;
+    /**
+     * Modality
+     */
+    modality: string;
+    /**
+     * Model Version
+     */
+    model_version: string | null;
+    /**
+     * Ground Truth Version
+     */
+    ground_truth_version: string | null;
+    /**
+     * Metric Status
+     */
+    metric_status: string;
+    /**
+     * Duration Seconds
+     */
+    duration_seconds: number;
+    /**
+     * Detection Count
+     */
+    detection_count: number;
+    /**
+     * Track Count
+     */
+    track_count: number;
+    /**
+     * Entry Count
+     */
+    entry_count: number | null;
+    /**
+     * Exit Count
+     */
+    exit_count: number | null;
+    /**
+     * Anomaly Window Count
+     */
+    anomaly_window_count: number;
+    /**
+     * Created At
+     */
+    created_at: string;
+    /**
+     * Payload
+     */
+    payload: {
+        [key: string]: unknown;
+    };
+};
+
+/**
+ * BehaviorReportImport
+ */
+export type BehaviorReportImport = {
+    /**
+     * Report
+     */
+    report: {
+        [key: string]: unknown;
+    };
+    /**
+     * Source Sha256
+     */
+    source_sha256: string;
+    /**
+     * Source Path
+     */
+    source_path?: string | null;
+    /**
+     * Modality
+     */
+    modality?: 'RGB' | 'IR' | 'UNKNOWN';
+    /**
+     * Model Version
+     */
+    model_version?: string | null;
+    /**
+     * Ground Truth Version
+     */
+    ground_truth_version?: string | null;
+    /**
+     * Metric Status
+     */
+    metric_status?: 'descriptive_only_without_human_mot_ground_truth' | 'validated_against_human_mot_ground_truth';
+};
+
+/**
+ * BehaviorReportPublic
+ */
+export type BehaviorReportPublic = {
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Sequence Id
+     */
+    sequence_id: string;
+    /**
+     * Schema Version
+     */
+    schema_version: string;
+    /**
+     * Source
+     */
+    source: string | null;
+    /**
+     * Source Sha256
+     */
+    source_sha256: string;
+    /**
+     * Modality
+     */
+    modality: string;
+    /**
+     * Model Version
+     */
+    model_version: string | null;
+    /**
+     * Ground Truth Version
+     */
+    ground_truth_version: string | null;
+    /**
+     * Metric Status
+     */
+    metric_status: string;
+    /**
+     * Duration Seconds
+     */
+    duration_seconds: number;
+    /**
+     * Detection Count
+     */
+    detection_count: number;
+    /**
+     * Track Count
+     */
+    track_count: number;
+    /**
+     * Entry Count
+     */
+    entry_count: number | null;
+    /**
+     * Exit Count
+     */
+    exit_count: number | null;
+    /**
+     * Anomaly Window Count
+     */
+    anomaly_window_count: number;
+    /**
+     * Created At
+     */
+    created_at: string;
+};
+
+/**
+ * BehaviorReportsPublic
+ */
+export type BehaviorReportsPublic = {
+    /**
+     * Data
+     */
+    data: Array<BehaviorReportPublic>;
+    /**
+     * Count
+     */
+    count: number;
+};
+
+/**
  * Body_login-login_access_token
  */
 export type Body_login_login_access_token = {
@@ -32,6 +386,54 @@ export type Body_login_login_access_token = {
      * Client Secret
      */
     client_secret?: string | null;
+};
+
+/**
+ * Body_videos-upload_video
+ */
+export type Body_videos_upload_video = {
+    /**
+     * Scene Type
+     */
+    scene_type: string;
+    /**
+     * File
+     */
+    file: Blob | File;
+};
+
+/**
+ * DashboardSummary
+ */
+export type DashboardSummary = {
+    /**
+     * Video Count
+     */
+    video_count: number;
+    /**
+     * Analysis Report Count
+     */
+    analysis_report_count: number;
+    /**
+     * Tracked Individual Count
+     */
+    tracked_individual_count: number;
+    /**
+     * Anomaly Window Count
+     */
+    anomaly_window_count: number;
+    /**
+     * Entry Count
+     */
+    entry_count: number;
+    /**
+     * Exit Count
+     */
+    exit_count: number;
+    /**
+     * Latest Report At
+     */
+    latest_report_at: string | null;
 };
 
 /**
@@ -340,6 +742,58 @@ export type ValidationError = {
     ctx?: {
         [key: string]: unknown;
     };
+};
+
+/**
+ * VideoPublic
+ */
+export type VideoPublic = {
+    /**
+     * Original Filename
+     */
+    original_filename: string;
+    /**
+     * Scene Type
+     */
+    scene_type: string;
+    /**
+     * File Size
+     */
+    file_size?: number;
+    /**
+     * Content Type
+     */
+    content_type?: string | null;
+    /**
+     * Status
+     */
+    status?: string;
+    /**
+     * Id
+     */
+    id: string;
+    /**
+     * Owner Id
+     */
+    owner_id: string;
+    /**
+     * Created At
+     */
+    created_at?: string | null;
+};
+
+/**
+ * VideosPublic
+ */
+export type VideosPublic = {
+    /**
+     * Data
+     */
+    data: Array<VideoPublic>;
+    /**
+     * Count
+     */
+    count: number;
 };
 
 export type loginLoginAccessTokenData = {
@@ -920,6 +1374,487 @@ export type itemsUpdateItemResponses = {
 };
 
 export type itemsUpdateItemResponse = itemsUpdateItemResponses[keyof itemsUpdateItemResponses];
+
+export type dashboardReadDashboardSummaryData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/dashboard/summary';
+};
+
+export type dashboardReadDashboardSummaryResponses = {
+    /**
+     * Successful Response
+     */
+    200: DashboardSummary;
+};
+
+export type dashboardReadDashboardSummaryResponse = dashboardReadDashboardSummaryResponses[keyof dashboardReadDashboardSummaryResponses];
+
+export type behaviorReportsReadBehaviorReportsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Skip
+         */
+        skip?: number;
+        /**
+         * Limit
+         */
+        limit?: number;
+    };
+    url: '/api/v1/behavior-reports/';
+};
+
+export type behaviorReportsReadBehaviorReportsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type behaviorReportsReadBehaviorReportsError = behaviorReportsReadBehaviorReportsErrors[keyof behaviorReportsReadBehaviorReportsErrors];
+
+export type behaviorReportsReadBehaviorReportsResponses = {
+    /**
+     * Successful Response
+     */
+    200: BehaviorReportsPublic;
+};
+
+export type behaviorReportsReadBehaviorReportsResponse = behaviorReportsReadBehaviorReportsResponses[keyof behaviorReportsReadBehaviorReportsResponses];
+
+export type behaviorReportsReadLatestBehaviorReportData = {
+    body?: never;
+    path?: never;
+    query?: never;
+    url: '/api/v1/behavior-reports/latest';
+};
+
+export type behaviorReportsReadLatestBehaviorReportResponses = {
+    /**
+     * Successful Response
+     */
+    200: BehaviorReportDetail;
+};
+
+export type behaviorReportsReadLatestBehaviorReportResponse = behaviorReportsReadLatestBehaviorReportResponses[keyof behaviorReportsReadLatestBehaviorReportResponses];
+
+export type behaviorReportsReadBehaviorReportData = {
+    body?: never;
+    path: {
+        /**
+         * Report Id
+         */
+        report_id: string;
+    };
+    query?: never;
+    url: '/api/v1/behavior-reports/{report_id}';
+};
+
+export type behaviorReportsReadBehaviorReportErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type behaviorReportsReadBehaviorReportError = behaviorReportsReadBehaviorReportErrors[keyof behaviorReportsReadBehaviorReportErrors];
+
+export type behaviorReportsReadBehaviorReportResponses = {
+    /**
+     * Successful Response
+     */
+    200: BehaviorReportDetail;
+};
+
+export type behaviorReportsReadBehaviorReportResponse = behaviorReportsReadBehaviorReportResponses[keyof behaviorReportsReadBehaviorReportResponses];
+
+export type behaviorReportsImportBehaviorReportData = {
+    body: BehaviorReportImport;
+    path?: never;
+    query?: never;
+    url: '/api/v1/behavior-reports/import';
+};
+
+export type behaviorReportsImportBehaviorReportErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type behaviorReportsImportBehaviorReportError = behaviorReportsImportBehaviorReportErrors[keyof behaviorReportsImportBehaviorReportErrors];
+
+export type behaviorReportsImportBehaviorReportResponses = {
+    /**
+     * Successful Response
+     */
+    201: BehaviorReportDetail;
+};
+
+export type behaviorReportsImportBehaviorReportResponse = behaviorReportsImportBehaviorReportResponses[keyof behaviorReportsImportBehaviorReportResponses];
+
+export type videosReadVideosData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Skip
+         */
+        skip?: number;
+        /**
+         * Limit
+         */
+        limit?: number;
+    };
+    url: '/api/v1/videos/';
+};
+
+export type videosReadVideosErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type videosReadVideosError = videosReadVideosErrors[keyof videosReadVideosErrors];
+
+export type videosReadVideosResponses = {
+    /**
+     * Successful Response
+     */
+    200: VideosPublic;
+};
+
+export type videosReadVideosResponse = videosReadVideosResponses[keyof videosReadVideosResponses];
+
+export type videosUploadVideoData = {
+    body: Body_videos_upload_video;
+    path?: never;
+    query?: never;
+    url: '/api/v1/videos/upload';
+};
+
+export type videosUploadVideoErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type videosUploadVideoError = videosUploadVideoErrors[keyof videosUploadVideoErrors];
+
+export type videosUploadVideoResponses = {
+    /**
+     * Successful Response
+     */
+    200: VideoPublic;
+};
+
+export type videosUploadVideoResponse = videosUploadVideoResponses[keyof videosUploadVideoResponses];
+
+export type videosDeleteVideoData = {
+    body?: never;
+    path: {
+        /**
+         * Video Id
+         */
+        video_id: string;
+    };
+    query?: never;
+    url: '/api/v1/videos/{video_id}';
+};
+
+export type videosDeleteVideoErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type videosDeleteVideoError = videosDeleteVideoErrors[keyof videosDeleteVideoErrors];
+
+export type videosDeleteVideoResponses = {
+    /**
+     * Successful Response
+     */
+    200: Message;
+};
+
+export type videosDeleteVideoResponse = videosDeleteVideoResponses[keyof videosDeleteVideoResponses];
+
+export type videosReadVideoData = {
+    body?: never;
+    path: {
+        /**
+         * Video Id
+         */
+        video_id: string;
+    };
+    query?: never;
+    url: '/api/v1/videos/{video_id}';
+};
+
+export type videosReadVideoErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type videosReadVideoError = videosReadVideoErrors[keyof videosReadVideoErrors];
+
+export type videosReadVideoResponses = {
+    /**
+     * Successful Response
+     */
+    200: VideoPublic;
+};
+
+export type videosReadVideoResponse = videosReadVideoResponses[keyof videosReadVideoResponses];
+
+export type videosReadVideoFileData = {
+    body?: never;
+    path: {
+        /**
+         * Video Id
+         */
+        video_id: string;
+    };
+    query?: never;
+    url: '/api/v1/videos/{video_id}/file';
+};
+
+export type videosReadVideoFileErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type videosReadVideoFileError = videosReadVideoFileErrors[keyof videosReadVideoFileErrors];
+
+export type videosReadVideoFileResponses = {
+    /**
+     * Successful Response
+     */
+    200: unknown;
+};
+
+export type tasksReadTasksData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Skip
+         */
+        skip?: number;
+        /**
+         * Limit
+         */
+        limit?: number;
+    };
+    url: '/api/v1/tasks/';
+};
+
+export type tasksReadTasksErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type tasksReadTasksError = tasksReadTasksErrors[keyof tasksReadTasksErrors];
+
+export type tasksReadTasksResponses = {
+    /**
+     * Successful Response
+     */
+    200: AnalysisTasksPublic;
+};
+
+export type tasksReadTasksResponse = tasksReadTasksResponses[keyof tasksReadTasksResponses];
+
+export type tasksCreateTaskData = {
+    body: AnalysisTaskCreate;
+    path?: never;
+    query?: never;
+    url: '/api/v1/tasks/';
+};
+
+export type tasksCreateTaskErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type tasksCreateTaskError = tasksCreateTaskErrors[keyof tasksCreateTaskErrors];
+
+export type tasksCreateTaskResponses = {
+    /**
+     * Successful Response
+     */
+    200: AnalysisTaskPublic;
+};
+
+export type tasksCreateTaskResponse = tasksCreateTaskResponses[keyof tasksCreateTaskResponses];
+
+export type tasksDeleteTaskData = {
+    body?: never;
+    path: {
+        /**
+         * Task Id
+         */
+        task_id: string;
+    };
+    query?: never;
+    url: '/api/v1/tasks/{task_id}';
+};
+
+export type tasksDeleteTaskErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type tasksDeleteTaskError = tasksDeleteTaskErrors[keyof tasksDeleteTaskErrors];
+
+export type tasksDeleteTaskResponses = {
+    /**
+     * Successful Response
+     */
+    200: Message;
+};
+
+export type tasksDeleteTaskResponse = tasksDeleteTaskResponses[keyof tasksDeleteTaskResponses];
+
+export type tasksReadTaskData = {
+    body?: never;
+    path: {
+        /**
+         * Task Id
+         */
+        task_id: string;
+    };
+    query?: never;
+    url: '/api/v1/tasks/{task_id}';
+};
+
+export type tasksReadTaskErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type tasksReadTaskError = tasksReadTaskErrors[keyof tasksReadTaskErrors];
+
+export type tasksReadTaskResponses = {
+    /**
+     * Successful Response
+     */
+    200: AnalysisTaskPublic;
+};
+
+export type tasksReadTaskResponse = tasksReadTaskResponses[keyof tasksReadTaskResponses];
+
+export type resultsReadResultsData = {
+    body?: never;
+    path?: never;
+    query?: {
+        /**
+         * Skip
+         */
+        skip?: number;
+        /**
+         * Limit
+         */
+        limit?: number;
+    };
+    url: '/api/v1/results/';
+};
+
+export type resultsReadResultsErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type resultsReadResultsError = resultsReadResultsErrors[keyof resultsReadResultsErrors];
+
+export type resultsReadResultsResponses = {
+    /**
+     * Successful Response
+     */
+    200: AnalysisResultsPublic;
+};
+
+export type resultsReadResultsResponse = resultsReadResultsResponses[keyof resultsReadResultsResponses];
+
+export type resultsReadResultByTaskData = {
+    body?: never;
+    path: {
+        /**
+         * Task Id
+         */
+        task_id: string;
+    };
+    query?: never;
+    url: '/api/v1/results/task/{task_id}';
+};
+
+export type resultsReadResultByTaskErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type resultsReadResultByTaskError = resultsReadResultByTaskErrors[keyof resultsReadResultByTaskErrors];
+
+export type resultsReadResultByTaskResponses = {
+    /**
+     * Successful Response
+     */
+    200: AnalysisResultPublic;
+};
+
+export type resultsReadResultByTaskResponse = resultsReadResultByTaskResponses[keyof resultsReadResultByTaskResponses];
+
+export type resultsReadResultData = {
+    body?: never;
+    path: {
+        /**
+         * Result Id
+         */
+        result_id: string;
+    };
+    query?: never;
+    url: '/api/v1/results/{result_id}';
+};
+
+export type resultsReadResultErrors = {
+    /**
+     * Validation Error
+     */
+    422: HTTPValidationError;
+};
+
+export type resultsReadResultError = resultsReadResultErrors[keyof resultsReadResultErrors];
+
+export type resultsReadResultResponses = {
+    /**
+     * Successful Response
+     */
+    200: AnalysisResultPublic;
+};
+
+export type resultsReadResultResponse = resultsReadResultResponses[keyof resultsReadResultResponses];
 
 export type privateCreateUserData = {
     body: PrivateUserCreate;

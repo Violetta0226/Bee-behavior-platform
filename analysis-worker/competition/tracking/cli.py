@@ -23,7 +23,9 @@ def iter_detection_frames(path: str | Path) -> Iterator[tuple[int, list[Detectio
             try:
                 payload = json.loads(line)
             except json.JSONDecodeError as exc:
-                raise ValueError(f"invalid JSON at line {line_number}: {exc.msg}") from exc
+                raise ValueError(
+                    f"invalid JSON at line {line_number}: {exc.msg}"
+                ) from exc
             if not isinstance(payload, dict):
                 raise ValueError(f"line {line_number} must contain a JSON object")
             frame_id = payload.get("frame_id")

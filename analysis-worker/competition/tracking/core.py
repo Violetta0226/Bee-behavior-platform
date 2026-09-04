@@ -56,7 +56,9 @@ class Detection:
         confidence: float,
         class_id: int = 0,
     ) -> "Detection":
-        return cls(x1, y1, float(x2) - float(x1), float(y2) - float(y1), confidence, class_id)
+        return cls(
+            x1, y1, float(x2) - float(x1), float(y2) - float(y1), confidence, class_id
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -159,8 +161,12 @@ class _Track:
             self.velocity_x = observed_vx
             self.velocity_y = observed_vy
         else:
-            self.velocity_x = momentum * self.velocity_x + (1.0 - momentum) * observed_vx
-            self.velocity_y = momentum * self.velocity_y + (1.0 - momentum) * observed_vy
+            self.velocity_x = (
+                momentum * self.velocity_x + (1.0 - momentum) * observed_vx
+            )
+            self.velocity_y = (
+                momentum * self.velocity_y + (1.0 - momentum) * observed_vy
+            )
         self.bbox = detection.bbox
         self.confidence = detection.confidence
         self.last_observation_frame = frame_id
@@ -202,7 +208,9 @@ class BeeTracker:
 
         frame_id = self._resolve_frame_id(frame_id)
         candidates = [self._coerce_detection(item) for item in detections]
-        candidates = [item for item in candidates if item.confidence >= self.config.low_confidence]
+        candidates = [
+            item for item in candidates if item.confidence >= self.config.low_confidence
+        ]
 
         # A track may match after max_lost missing frames; older state is removed.
         self._tracks = [
@@ -212,8 +220,14 @@ class BeeTracker:
         ]
         updated_ids: set[int] = set()
 
-        high = [item for item in candidates if item.confidence >= self.config.high_confidence]
-        low = [item for item in candidates if item.confidence < self.config.high_confidence]
+        high = [
+            item
+            for item in candidates
+            if item.confidence >= self.config.high_confidence
+        ]
+        low = [
+            item for item in candidates if item.confidence < self.config.high_confidence
+        ]
 
         first_matches, unmatched_track_indices, unmatched_high = self._associate(
             self._tracks,
@@ -261,7 +275,9 @@ class BeeTracker:
             self._tracks.append(track)
             updated_ids.add(track.track_id)
 
-        self._tracks = [track for track in self._tracks if track.missed <= self.config.max_lost]
+        self._tracks = [
+            track for track in self._tracks if track.missed <= self.config.max_lost
+        ]
         self._last_frame_id = frame_id
         return self._build_results(frame_id, updated_ids)
 
@@ -302,11 +318,17 @@ class BeeTracker:
             raise ValueError("unsupported tracker state schema")
         last_frame = payload.get("last_frame_id")
         if last_frame is not None and (
-            not isinstance(last_frame, int) or isinstance(last_frame, bool) or last_frame < 1
+            not isinstance(last_frame, int)
+            or isinstance(last_frame, bool)
+            or last_frame < 1
         ):
             raise ValueError("invalid tracker last_frame_id")
         next_track_id = payload.get("next_track_id")
-        if not isinstance(next_track_id, int) or isinstance(next_track_id, bool) or next_track_id < 1:
+        if (
+            not isinstance(next_track_id, int)
+            or isinstance(next_track_id, bool)
+            or next_track_id < 1
+        ):
             raise ValueError("invalid tracker next_track_id")
         raw_tracks = payload.get("tracks")
         if not isinstance(raw_tracks, list):
@@ -317,7 +339,11 @@ class BeeTracker:
             if not isinstance(item, Mapping):
                 raise ValueError("invalid tracker state track")
             bbox = item.get("bbox")
-            if not isinstance(bbox, Sequence) or isinstance(bbox, (str, bytes)) or len(bbox) != 4:
+            if (
+                not isinstance(bbox, Sequence)
+                or isinstance(bbox, (str, bytes))
+                or len(bbox) != 4
+            ):
                 raise ValueError("invalid tracker state bbox")
             track = _Track(
                 track_id=int(item["track_id"]),
@@ -352,7 +378,9 @@ class BeeTracker:
         if not isinstance(frame_id, int) or isinstance(frame_id, bool) or frame_id < 1:
             raise ValueError("frame_id must be a positive integer")
         if self._last_frame_id is not None and frame_id <= self._last_frame_id:
-            raise ValueError("frame_id must increase within a sequence; call reset() for a new sequence")
+            raise ValueError(
+                "frame_id must increase within a sequence; call reset() for a new sequence"
+            )
         return frame_id
 
     @staticmethod
@@ -362,7 +390,11 @@ class BeeTracker:
         if not isinstance(item, Mapping):
             raise TypeError("detections must be Detection objects or mappings")
         bbox = item.get("bbox")
-        if not isinstance(bbox, Sequence) or isinstance(bbox, (str, bytes)) or len(bbox) != 4:
+        if (
+            not isinstance(bbox, Sequence)
+            or isinstance(bbox, (str, bytes))
+            or len(bbox) != 4
+        ):
             raise ValueError("mapping detection bbox must contain four xywh values")
         confidence = item.get("confidence", item.get("score"))
         if confidence is None:
@@ -394,11 +426,17 @@ class BeeTracker:
         )
         if fast_matches is not None:
             matched_tracks = {track_index for track_index, _ in fast_matches}
-            matched_detections = {detection_index for _, detection_index in fast_matches}
+            matched_detections = {
+                detection_index for _, detection_index in fast_matches
+            }
             return (
                 fast_matches,
                 [index for index in range(len(tracks)) if index not in matched_tracks],
-                [index for index in range(len(detections)) if index not in matched_detections],
+                [
+                    index
+                    for index in range(len(detections))
+                    if index not in matched_detections
+                ],
             )
 
         scores: list[list[float | None]] = []
@@ -425,7 +463,11 @@ class BeeTracker:
         return (
             matches,
             [index for index in range(len(tracks)) if index not in matched_tracks],
-            [index for index in range(len(detections)) if index not in matched_detections],
+            [
+                index
+                for index in range(len(detections))
+                if index not in matched_detections
+            ],
         )
 
     def _build_results(self, frame_id: int, updated_ids: set[int]) -> list[TrackResult]:
@@ -433,11 +475,14 @@ class BeeTracker:
         for track in self._tracks:
             predicted = track.track_id not in updated_ids
             if predicted:
-                if not self.config.emit_predictions or track.missed > self.config.max_prediction_age:
+                if (
+                    not self.config.emit_predictions
+                    or track.missed > self.config.max_prediction_age
+                ):
                     continue
                 bbox = track.predicted_bbox(frame_id)
                 confidence = track.confidence * (
-                    self.config.prediction_confidence_decay ** track.missed
+                    self.config.prediction_confidence_decay**track.missed
                 )
             else:
                 bbox = track.bbox
@@ -472,7 +517,9 @@ def detections_from_xyxy_rows(
     """
 
     detections: list[Detection] = []
-    required_index = max(3, confidence_index, class_index if class_index is not None else 0)
+    required_index = max(
+        3, confidence_index, class_index if class_index is not None else 0
+    )
     for row in rows:
         if len(row) <= required_index:
             raise ValueError("xyxy row does not contain the configured fields")
@@ -524,7 +571,10 @@ def _association_score(
     )
     scale = max(
         1.0,
-        math.sqrt((predicted_bbox[2] * predicted_bbox[3] + detection.width * detection.height) / 2.0),
+        math.sqrt(
+            (predicted_bbox[2] * predicted_bbox[3] + detection.width * detection.height)
+            / 2.0
+        ),
     )
     normalized_distance = distance / scale
     width_similarity = min(predicted_bbox[2], detection.width) / max(
@@ -542,7 +592,9 @@ def _association_score(
 
     proximity = math.exp(-0.5 * normalized_distance * normalized_distance)
     direction = _direction_score(track, detection)
-    score = 0.35 * overlap + 0.45 * proximity + 0.15 * size_similarity + 0.05 * direction
+    score = (
+        0.35 * overlap + 0.45 * proximity + 0.15 * size_similarity + 0.05 * direction
+    )
     return score if score >= min_score else None
 
 
@@ -578,8 +630,12 @@ def _lapx_numpy_assignment(
     except ImportError:
         return None
 
-    predicted = np.asarray([track.predicted_bbox(frame_id) for track in tracks], dtype=np.float64)
-    observed = np.asarray([detection.bbox for detection in detections], dtype=np.float64)
+    predicted = np.asarray(
+        [track.predicted_bbox(frame_id) for track in tracks], dtype=np.float64
+    )
+    observed = np.asarray(
+        [detection.bbox for detection in detections], dtype=np.float64
+    )
     track_x1 = predicted[:, 0, None]
     track_y1 = predicted[:, 1, None]
     track_x2 = (predicted[:, 0] + predicted[:, 2])[:, None]
@@ -588,12 +644,18 @@ def _lapx_numpy_assignment(
     detection_y1 = observed[None, :, 1]
     detection_x2 = (observed[:, 0] + observed[:, 2])[None, :]
     detection_y2 = (observed[:, 1] + observed[:, 3])[None, :]
-    intersection = np.maximum(0.0, np.minimum(track_x2, detection_x2) - np.maximum(track_x1, detection_x1))
-    intersection *= np.maximum(0.0, np.minimum(track_y2, detection_y2) - np.maximum(track_y1, detection_y1))
+    intersection = np.maximum(
+        0.0, np.minimum(track_x2, detection_x2) - np.maximum(track_x1, detection_x1)
+    )
+    intersection *= np.maximum(
+        0.0, np.minimum(track_y2, detection_y2) - np.maximum(track_y1, detection_y1)
+    )
     track_area = (predicted[:, 2] * predicted[:, 3])[:, None]
     detection_area = (observed[:, 2] * observed[:, 3])[None, :]
     union = track_area + detection_area - intersection
-    overlap = np.divide(intersection, union, out=np.zeros_like(intersection), where=union > 0)
+    overlap = np.divide(
+        intersection, union, out=np.zeros_like(intersection), where=union > 0
+    )
 
     track_center_x = (predicted[:, 0] + predicted[:, 2] / 2.0)[:, None]
     track_center_y = (predicted[:, 1] + predicted[:, 3] / 2.0)[:, None]
@@ -605,12 +667,12 @@ def _lapx_numpy_assignment(
     scale = np.maximum(1.0, np.sqrt((track_area + detection_area) / 2.0))
     normalized_distance = distance / scale
 
-    width_similarity = np.minimum(predicted[:, 2, None], observed[None, :, 2]) / np.maximum(
+    width_similarity = np.minimum(
         predicted[:, 2, None], observed[None, :, 2]
-    )
-    height_similarity = np.minimum(predicted[:, 3, None], observed[None, :, 3]) / np.maximum(
+    ) / np.maximum(predicted[:, 2, None], observed[None, :, 2])
+    height_similarity = np.minimum(
         predicted[:, 3, None], observed[None, :, 3]
-    )
+    ) / np.maximum(predicted[:, 3, None], observed[None, :, 3])
     size_similarity = width_similarity * height_similarity
 
     actual = np.asarray([track.bbox for track in tracks], dtype=np.float64)
@@ -619,8 +681,12 @@ def _lapx_numpy_assignment(
     dx_actual = detection_center_x - actual_center_x
     dy_actual = detection_center_y - actual_center_y
     displacement = np.hypot(dx_actual, dy_actual)
-    velocity_x = np.asarray([track.velocity_x for track in tracks], dtype=np.float64)[:, None]
-    velocity_y = np.asarray([track.velocity_y for track in tracks], dtype=np.float64)[:, None]
+    velocity_x = np.asarray([track.velocity_x for track in tracks], dtype=np.float64)[
+        :, None
+    ]
+    velocity_y = np.asarray([track.velocity_y for track in tracks], dtype=np.float64)[
+        :, None
+    ]
     speed = np.hypot(velocity_x, velocity_y)
     direction = np.full_like(overlap, 0.5)
     directional = (speed > 1e-9) & (displacement > 1e-9)

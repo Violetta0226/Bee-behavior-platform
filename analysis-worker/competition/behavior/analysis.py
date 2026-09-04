@@ -41,7 +41,9 @@ class Rectangle:
     y2: float
 
     def __post_init__(self) -> None:
-        if not all(math.isfinite(value) for value in (self.x1, self.y1, self.x2, self.y2)):
+        if not all(
+            math.isfinite(value) for value in (self.x1, self.y1, self.x2, self.y2)
+        ):
             raise ValueError("ROI coordinates must be finite")
         if self.x2 <= self.x1 or self.y2 <= self.y1:
             raise ValueError("ROI must satisfy x2 > x1 and y2 > y1")
@@ -71,7 +73,9 @@ class CountingGate:
     def signed_distance(self, point: tuple[float, float]) -> float:
         dx = self.x2 - self.x1
         dy = self.y2 - self.y1
-        return (dx * (point[1] - self.y1) - dy * (point[0] - self.x1)) / math.hypot(dx, dy)
+        return (dx * (point[1] - self.y1) - dy * (point[0] - self.x1)) / math.hypot(
+            dx, dy
+        )
 
     def crossing_on_segment(
         self, start: tuple[float, float], end: tuple[float, float]
@@ -88,9 +92,9 @@ class CountingGate:
         crossing_y = start[1] + ratio * (end[1] - start[1])
         dx = self.x2 - self.x1
         dy = self.y2 - self.y1
-        projection = (
-            (crossing_x - self.x1) * dx + (crossing_y - self.y1) * dy
-        ) / (dx * dx + dy * dy)
+        projection = ((crossing_x - self.x1) * dx + (crossing_y - self.y1) * dy) / (
+            dx * dx + dy * dy
+        )
         return 0.0 <= projection <= 1.0
 
 
@@ -239,7 +243,9 @@ def parse_mot(path: Path | str) -> list[Detection]:
 
     detections: list[Detection] = []
     seen: set[tuple[int, int]] = set()
-    for offset, line in enumerate(data_lines, start=2 if data_lines is not lines else 1):
+    for offset, line in enumerate(
+        data_lines, start=2 if data_lines is not lines else 1
+    ):
         row = _split_row(line)
         try:
             item = Detection(
@@ -254,11 +260,15 @@ def parse_mot(path: Path | str) -> list[Detection]:
                 visibility=float(_field(row, indices, "visibility", "1")),
             )
         except (ValueError, IndexError) as exc:
-            raise ValueError(f"{source}:{offset}: invalid trajectory row: {exc}") from exc
+            raise ValueError(
+                f"{source}:{offset}: invalid trajectory row: {exc}"
+            ) from exc
         if item.frame < 1 or item.track_id < 1:
             raise ValueError(f"{source}:{offset}: frame and track_id must be positive")
         if item.width <= 0 or item.height <= 0:
-            raise ValueError(f"{source}:{offset}: bbox width and height must be positive")
+            raise ValueError(
+                f"{source}:{offset}: bbox width and height must be positive"
+            )
         numeric_values = (
             item.x,
             item.y,
@@ -368,7 +378,9 @@ def _individual_metrics(
                 )
                 if previous_heading is not None and previous_segment_gap is not None:
                     heading_dt = (previous_segment_gap + gap) / (2.0 * config.fps)
-                    angular = _angle_delta_degrees(previous_heading, heading) / heading_dt
+                    angular = (
+                        _angle_delta_degrees(previous_heading, heading) / heading_dt
+                    )
                     signed_angular.append(angular)
                     absolute_angular.append(abs(angular))
                 previous_heading = heading
@@ -408,7 +420,9 @@ def _individual_metrics(
                     max(speeds_px_s) / body_length_px if speeds_px_s else None
                 ),
                 "mean_signed_angular_velocity_deg_s": (
-                    sum(signed_angular) / len(signed_angular) if signed_angular else None
+                    sum(signed_angular) / len(signed_angular)
+                    if signed_angular
+                    else None
                 ),
                 "mean_absolute_angular_velocity_deg_s": (
                     sum(absolute_angular) / len(absolute_angular)
@@ -500,7 +514,11 @@ def _gate_flux_events(
         for item in track[1:]:
             gap = item.frame - previous.frame
             distance = gate.signed_distance(item.center)
-            side = 0 if abs(distance) <= config.gate_deadband_px else (1 if distance > 0 else -1)
+            side = (
+                0
+                if abs(distance) <= config.gate_deadband_px
+                else (1 if distance > 0 else -1)
+            )
             if gap > config.max_gap_frames:
                 stable_side = side or None
                 pending_side = None
@@ -522,7 +540,9 @@ def _gate_flux_events(
                 pending_side = side
                 pending_count = 1
                 pending_start = item.frame
-                pending_crossing_valid = gate.crossing_on_segment(previous.center, item.center)
+                pending_crossing_valid = gate.crossing_on_segment(
+                    previous.center, item.center
+                )
             if pending_count >= config.crossing_debounce_frames:
                 stable_side = side
                 cooldown_ok = (
@@ -551,7 +571,11 @@ def _gate_flux_events(
 def _flux_events(
     by_track: dict[int, list[Detection]], config: BehaviorConfig
 ) -> list[dict[str, Any]]:
-    return _gate_flux_events(by_track, config) if config.gate is not None else _roi_flux_events(by_track, config)
+    return (
+        _gate_flux_events(by_track, config)
+        if config.gate is not None
+        else _roi_flux_events(by_track, config)
+    )
 
 
 def _density_grid(
@@ -565,7 +589,9 @@ def _density_grid(
         ys = [point[1] for point in centers]
         x1, x2 = min(xs), max(xs)
         y1, y2 = min(ys), max(ys)
-        domain = Rectangle(x1, y1, x2 if x2 > x1 else x1 + 1.0, y2 if y2 > y1 else y1 + 1.0)
+        domain = Rectangle(
+            x1, y1, x2 if x2 > x1 else x1 + 1.0, y2 if y2 > y1 else y1 + 1.0
+        )
     counts: dict[tuple[int, int], int] = defaultdict(int)
     included = 0
     for point in centers:
@@ -581,7 +607,11 @@ def _density_grid(
         )
         counts[(row, col)] += 1
         included += 1
-    frame_count = max(item.frame for item in detections) - min(item.frame for item in detections) + 1
+    frame_count = (
+        max(item.frame for item in detections)
+        - min(item.frame for item in detections)
+        + 1
+    )
     cell_width = (domain.x2 - domain.x1) / config.grid_cols
     cell_height = (domain.y2 - domain.y1) / config.grid_rows
     cells: list[dict[str, Any]] = []
@@ -601,7 +631,11 @@ def _density_grid(
                     "observation_fraction": count / included if included else 0.0,
                 }
             )
-    probabilities = [cell["observation_fraction"] for cell in cells if cell["observation_fraction"] > 0]
+    probabilities = [
+        cell["observation_fraction"]
+        for cell in cells
+        if cell["observation_fraction"] > 0
+    ]
     entropy = -sum(value * math.log(value) for value in probabilities)
     max_entropy = math.log(len(cells)) if len(cells) > 1 else 0.0
     top_count = max(1, math.ceil(len(cells) * 0.10))
@@ -611,9 +645,9 @@ def _density_grid(
         else 0.0
     )
     mean_count = included / len(cells)
-    count_variance = (
-        sum((cell["observation_count"] - mean_count) ** 2 for cell in cells) / len(cells)
-    )
+    count_variance = sum(
+        (cell["observation_count"] - mean_count) ** 2 for cell in cells
+    ) / len(cells)
     return cells, {
         "domain_px": asdict(domain),
         "included_observations": included,
@@ -667,11 +701,16 @@ def _interaction_network(
                             "last_frame": None,
                         },
                     )
-                    if state["last_frame"] is None or frame - state["last_frame"] > config.max_gap_frames:
+                    if (
+                        state["last_frame"] is None
+                        or frame - state["last_frame"] > config.max_gap_frames
+                    ):
                         state["episode_count"] += 1
                     state["interaction_frames"] += 1
                     state["distance_sum_px"] += distance_px
-                    state["min_distance_px"] = min(state["min_distance_px"], distance_px)
+                    state["min_distance_px"] = min(
+                        state["min_distance_px"], distance_px
+                    )
                     state["last_frame"] = frame
                     pair_frames.append({"frame": frame, "pair_count": 1})
 
@@ -740,8 +779,12 @@ def _temporal_bins(
         start = first_frame + index * bin_frames
         end = min(last_frame, start + bin_frames - 1)
         frame_count = end - start + 1
-        detection_count = sum(len(frame_tracks[frame]) for frame in range(start, end + 1))
-        unique_tracks = set().union(*(frame_tracks[frame] for frame in range(start, end + 1)))
+        detection_count = sum(
+            len(frame_tracks[frame]) for frame in range(start, end + 1)
+        )
+        unique_tracks = set().union(
+            *(frame_tracks[frame] for frame in range(start, end + 1))
+        )
         speeds = speeds_by_bin[index]
         normalized_speeds = normalized_speeds_by_bin[index]
         directions = events_by_bin[index]
@@ -767,6 +810,7 @@ def _temporal_bins(
                 "warmup": index < config.temporal_warmup_bins,
             }
         )
+
     def add_robust_z(source: str, destination: str) -> None:
         values = [
             float(row[source])
@@ -786,7 +830,11 @@ def _temporal_bins(
                 if row["warmup"]
                 else 0.0
                 if value is not None and mad <= 1e-12
-                else (0.6745 * (float(value) - center) / mad if value is not None else None)
+                else (
+                    0.6745 * (float(value) - center) / mad
+                    if value is not None
+                    else None
+                )
             )
 
     for source, destination in (
@@ -889,7 +937,9 @@ def analyze_behavior(
             "duration_seconds": duration_seconds,
             "detection_count": len(records),
             "track_count": len(by_track),
-            "too_short_track_count": sum(row["status"] == "too_short" for row in individuals),
+            "too_short_track_count": sum(
+                row["status"] == "too_short" for row in individuals
+            ),
         },
         "individuals": individuals,
         "group": {
@@ -903,10 +953,14 @@ def analyze_behavior(
                 "exit_count": exits if flux_available else None,
                 "net_entry_count": entries - exits if flux_available else None,
                 "entries_per_minute": (
-                    entries / duration_minutes if flux_available and duration_minutes else None
+                    entries / duration_minutes
+                    if flux_available and duration_minutes
+                    else None
                 ),
                 "exits_per_minute": (
-                    exits / duration_minutes if flux_available and duration_minutes else None
+                    exits / duration_minutes
+                    if flux_available and duration_minutes
+                    else None
                 ),
                 "method": (
                     "directed_gate"
@@ -933,7 +987,9 @@ def analyze_behavior(
     )
 
 
-def _write_csv(path: Path, rows: Sequence[dict[str, Any]], fieldnames: Sequence[str]) -> None:
+def _write_csv(
+    path: Path, rows: Sequence[dict[str, Any]], fieldnames: Sequence[str]
+) -> None:
     with path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=fieldnames, extrasaction="ignore")
         writer.writeheader()
@@ -952,7 +1008,8 @@ def write_outputs(result: AnalysisResult, output_dir: Path | str) -> dict[str, s
         "temporal_csv": output / "temporal_summary.csv",
     }
     paths["summary_json"].write_text(
-        json.dumps(result.summary, ensure_ascii=False, indent=2, allow_nan=False) + "\n",
+        json.dumps(result.summary, ensure_ascii=False, indent=2, allow_nan=False)
+        + "\n",
         encoding="utf-8",
     )
     _write_csv(

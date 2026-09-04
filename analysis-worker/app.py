@@ -46,7 +46,9 @@ def authorize(x_worker_token: str = Header(default="")) -> None:
 def _within(root: Path, value: str) -> Path:
     path = Path(value).resolve()
     if path != root and root not in path.parents:
-        raise HTTPException(status_code=422, detail="Path is outside the shared data root")
+        raise HTTPException(
+            status_code=422, detail="Path is outside the shared data root"
+        )
     return path
 
 
@@ -72,24 +74,40 @@ def _probe_video(path: Path) -> dict[str, float | int]:
         str(path),
     ]
     try:
-        result = subprocess.run(command, check=True, capture_output=True, text=True, timeout=30)
+        result = subprocess.run(
+            command, check=True, capture_output=True, text=True, timeout=30
+        )
         payload = json.loads(result.stdout)
         stream = payload["streams"][0]
         duration = float(payload["format"]["duration"])
         width = int(stream["width"])
         height = int(stream["height"])
-    except (KeyError, IndexError, TypeError, ValueError, subprocess.SubprocessError) as exc:
-        raise HTTPException(status_code=422, detail="The uploaded video cannot be decoded") from exc
+    except (
+        KeyError,
+        IndexError,
+        TypeError,
+        ValueError,
+        subprocess.SubprocessError,
+    ) as exc:
+        raise HTTPException(
+            status_code=422, detail="The uploaded video cannot be decoded"
+        ) from exc
     if duration <= 0 or duration > 1800:
-        raise HTTPException(status_code=422, detail="Video duration must be between 0 and 1800 seconds")
+        raise HTTPException(
+            status_code=422, detail="Video duration must be between 0 and 1800 seconds"
+        )
     return {"duration_seconds": duration, "width": width, "height": height}
 
 
 def _tracker_config(modality: str) -> TrackerConfig:
-    config = json.loads((MODEL_ROOT / "runtime_config.json").read_text(encoding="utf-8"))
+    config = json.loads(
+        (MODEL_ROOT / "runtime_config.json").read_text(encoding="utf-8")
+    )
     values = dict(config.get("tracking", {}).get(modality, {}))
     allowed = TrackerConfig.__dataclass_fields__.keys()
-    return TrackerConfig(**{key: value for key, value in values.items() if key in allowed})
+    return TrackerConfig(
+        **{key: value for key, value in values.items() if key in allowed}
+    )
 
 
 def _anomaly_count(report: dict[str, Any]) -> int:
@@ -150,7 +168,9 @@ def analyze(request: AnalysisRequest) -> dict[str, Any]:
     try:
         probe = _probe_video(input_video)
         if output_dir.exists():
-            raise HTTPException(status_code=409, detail="Analysis output already exists")
+            raise HTTPException(
+                status_code=409, detail="Analysis output already exists"
+            )
         frames_dir = output_dir / "sequence" / "img1"
         tracks_dir = output_dir / "tracking"
         behavior_dir = output_dir / "behavior"
@@ -170,7 +190,9 @@ def analyze(request: AnalysisRequest) -> dict[str, Any]:
         try:
             subprocess.run(command, check=True, timeout=1800)
         except subprocess.SubprocessError as exc:
-            raise HTTPException(status_code=422, detail="Video frame extraction failed") from exc
+            raise HTTPException(
+                status_code=422, detail="Video frame extraction failed"
+            ) from exc
 
         tracking = run_sequence(
             frames_dir.parent,

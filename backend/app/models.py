@@ -392,9 +392,7 @@ class AnalysisResultBase(SQLModel):
         ge=0,
     )
 
-    # 平均运动速度
-    # 第一阶段可使用 pixel/s，
-    # 后期完成尺度标定后可转换为 mm/s
+    # 平均运动速度（当前真实流水线输出为体长/s）
     average_speed: float | None = Field(
         default=None,
     )

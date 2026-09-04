@@ -87,21 +87,12 @@
         "backgroundColor": "rgb(95, 107, 87)"
       }
     ],
-    "distinctNodeRoles": [
-      "create-origin",
-      "analysis-node",
-      "result-endpoint"
-    ],
+    "distinctNodeRoles": ["create-origin", "analysis-node", "result-endpoint"],
     "taskHref": "/tasks/a4ae8ff5-fec4-4a04-97c0-2114e2395264"
   },
   "taskDetail": {
     "url": "http://localhost:8000/tasks/a4ae8ff5-fec4-4a04-97c0-2114e2395264",
-    "headings": [
-      "任务详情 A•570",
-      "分析证据与过程",
-      "任务读数",
-      "关联证据"
-    ],
+    "headings": ["任务详情 A•570", "分析证据与过程", "任务读数", "关联证据"],
     "hasProcessInspector": true,
     "hasReadingGrid": true,
     "links": [

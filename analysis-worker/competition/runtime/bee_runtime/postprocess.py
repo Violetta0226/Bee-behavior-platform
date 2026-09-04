@@ -8,7 +8,9 @@ from typing import Any, Iterable
 import numpy as np
 
 
-def decode_yolo_output(output: np.ndarray, image_size: int) -> tuple[np.ndarray, np.ndarray, np.ndarray, bool]:
+def decode_yolo_output(
+    output: np.ndarray, image_size: int
+) -> tuple[np.ndarray, np.ndarray, np.ndarray, bool]:
     """Decode either E2E Nx6 rows or dense (4+C)xN YOLO output.
 
     Returns ``xyxy``, confidence, class id and whether the output was E2E.
@@ -69,9 +71,13 @@ def box_iou_one_to_many(box: np.ndarray, boxes: np.ndarray) -> np.ndarray:
     y2 = np.minimum(box[3], boxes[:, 3])
     intersection = np.maximum(0.0, x2 - x1) * np.maximum(0.0, y2 - y1)
     area_a = max(0.0, float(box[2] - box[0])) * max(0.0, float(box[3] - box[1]))
-    area_b = np.maximum(0.0, boxes[:, 2] - boxes[:, 0]) * np.maximum(0.0, boxes[:, 3] - boxes[:, 1])
+    area_b = np.maximum(0.0, boxes[:, 2] - boxes[:, 0]) * np.maximum(
+        0.0, boxes[:, 3] - boxes[:, 1]
+    )
     union = area_a + area_b - intersection
-    return np.divide(intersection, union, out=np.zeros_like(intersection), where=union > 0)
+    return np.divide(
+        intersection, union, out=np.zeros_like(intersection), where=union > 0
+    )
 
 
 def non_max_suppression(
@@ -110,7 +116,9 @@ def box_vote(
         return output
     for output_index, source_index in enumerate(keep):
         overlaps = box_iou_one_to_many(boxes[source_index], boxes)
-        selected = (overlaps >= vote_iou) & (scores >= scores[source_index] * score_ratio)
+        selected = (overlaps >= vote_iou) & (
+            scores >= scores[source_index] * score_ratio
+        )
         if np.count_nonzero(selected) <= 1:
             continue
         weights = np.power(np.maximum(scores[selected], 1e-8), power)
@@ -160,7 +168,9 @@ def calibrate_xyxy(
         if not np.any(selected):
             continue
         center_x = centers_x[selected] + strength * float(item["dx"]) * widths[selected]
-        center_y = centers_y[selected] + strength * float(item["dy"]) * heights[selected]
+        center_y = (
+            centers_y[selected] + strength * float(item["dy"]) * heights[selected]
+        )
         width = widths[selected] * np.exp(strength * float(item["log_width"]))
         height = heights[selected] * np.exp(strength * float(item["log_height"]))
         output[selected, 0] = np.maximum(0.0, center_x - width / 2.0)
@@ -307,7 +317,9 @@ def detections_to_json(boxes: np.ndarray, scores: np.ndarray) -> list[dict[str, 
     return detections
 
 
-def select_top(boxes: np.ndarray, scores: np.ndarray, max_detections: int) -> tuple[np.ndarray, np.ndarray]:
+def select_top(
+    boxes: np.ndarray, scores: np.ndarray, max_detections: int
+) -> tuple[np.ndarray, np.ndarray]:
     indices = select_top_indices(scores, max_detections)
     return boxes[indices], scores[indices]
 

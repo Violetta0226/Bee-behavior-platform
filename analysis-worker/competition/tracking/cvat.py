@@ -59,7 +59,11 @@ def read_mot_rows(path: str | Path) -> list[MOTRow]:
             )
             if row.frame < 1 or row.track_id < 1:
                 raise ValueError(f"line {line_number} frame and id must be positive")
-            if row.width <= 0 or row.height <= 0 or not all(map(math.isfinite, numeric)):
+            if (
+                row.width <= 0
+                or row.height <= 0
+                or not all(map(math.isfinite, numeric))
+            ):
                 raise ValueError(f"line {line_number} contains invalid geometry")
             if row.class_id != 0:
                 raise ValueError(f"line {line_number} class_id must be 0")
@@ -143,7 +147,9 @@ def mot_rows_to_cvat_tracks(
     return tracks
 
 
-def _interpolate_points(left: dict[str, Any], right: dict[str, Any], frame: int) -> list[float]:
+def _interpolate_points(
+    left: dict[str, Any], right: dict[str, Any], frame: int
+) -> list[float]:
     if frame == int(left["frame"]):
         return [float(value) for value in left["points"]]
     span = int(right["frame"]) - int(left["frame"])
