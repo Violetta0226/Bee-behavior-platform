@@ -3,6 +3,7 @@ import path from "node:path"
 import { expect, type Locator, type Page, test } from "@playwright/test"
 
 import { firstSuperuser, firstSuperuserPassword } from "./config"
+import { mockResearchData } from "./research-data"
 
 const viewport = { width: 1914, height: 960 }
 const outputRoot = path.resolve(process.cwd(), "hard-acceptance-evidence")
@@ -26,6 +27,7 @@ test.beforeEach(async ({ page, request }, testInfo) => {
     window.localStorage.setItem("access_token", token)
     window.localStorage.setItem("vite-ui-theme", "light")
   }, body.access_token)
+  await mockResearchData(page)
 })
 
 async function waitForResearchPage(page: Page) {

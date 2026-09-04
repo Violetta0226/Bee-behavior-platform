@@ -2,6 +2,7 @@ import { expect, type Page, test } from "@playwright/test"
 
 import { formatEvidenceId } from "../src/lib/observationIds"
 import { firstSuperuser, firstSuperuserPassword } from "./config"
+import { mockResearchData, mockSecondVideo, mockVideo } from "./research-data"
 
 const primaryRoutes = ["/", "/videos", "/tasks", "/results"] as const
 const frameSizeByRoute = {
@@ -611,6 +612,7 @@ test("Workspace 在 1600 / 1920 / 2848 展开 Sidebar 后占据目标主区", as
 test("Desktop Sidebar 与核心页面使用真实 available main width", async ({
   page,
 }) => {
+  await mockResearchData(page)
   const readings: Array<Record<string, number | string>> = []
   for (const viewport of [1920, 2848]) {
     await page.setViewportSize({ width: viewport, height: 1080 })
@@ -691,6 +693,7 @@ test("1920 收起 Sidebar 后 workspace 仍保持宽屏利用率", async ({ page
 })
 
 test("路由连续切换保持 Shell 常驻且主体不进入空白态", async ({ page }) => {
+  await mockResearchData(page)
   await page.setViewportSize({ width: 1600, height: 1000 })
   await page.goto("/")
   await waitForResearchFrame(page)
@@ -862,6 +865,7 @@ test("2848 / 1920 Light / Dark 核心工作区截图", async ({ page }, testInfo
 })
 
 test("Premium Instrument Composition 弱化非语义 divider", async ({ page }) => {
+  await mockResearchData(page)
   await page.setViewportSize({ width: 1920, height: 1080 })
 
   await page.goto("/")
@@ -922,6 +926,15 @@ test("Premium Instrument Composition 弱化非语义 divider", async ({ page }) 
 })
 
 test("Videos 单样本使用宽屏密度，多样本恢复 archive 密度", async ({ page }) => {
+  let videoCount = 1
+  await page.route("**/api/v1/videos/?skip=0&limit=100", (route) =>
+    route.fulfill({
+      json: {
+        data: [mockVideo, mockSecondVideo].slice(0, videoCount),
+        count: videoCount,
+      },
+    }),
+  )
   await page.setViewportSize({ width: 1920, height: 1080 })
   await page.goto("/videos")
   await waitForResearchFrame(page)
@@ -941,24 +954,7 @@ test("Videos 单样本使用宽屏密度，多样本恢复 archive 密度", asyn
     expect(preview?.width ?? 0).toBeLessThanOrEqual(480.5)
   }
 
-  await page.route("**/api/v1/videos/?skip=0&limit=100", async (route) => {
-    const response = await route.fetch()
-    const body = (await response.json()) as {
-      data: Array<Record<string, unknown>>
-      count: number
-    }
-    if (body.data.length === 0) return route.fulfill({ response })
-    const source = body.data[0]
-    const duplicate = {
-      ...source,
-      id: "00000000-0000-4000-8000-000000000002",
-      original_filename: `archive-density-${String(source.original_filename)}`,
-    }
-    return route.fulfill({
-      response,
-      json: { data: [source, duplicate], count: 2 },
-    })
-  })
+  videoCount = 2
   await page.reload()
   await waitForResearchFrame(page)
   await expect(page.locator(".archive-plate")).toHaveCount(2)
@@ -978,6 +974,7 @@ test("Videos 单样本使用宽屏密度，多样本恢复 archive 密度", asyn
 })
 
 test("Videos 与 Video Detail 核心入口保持可用", async ({ page }) => {
+  await mockResearchData(page)
   await page.goto("/videos")
   await waitForResearchFrame(page)
 

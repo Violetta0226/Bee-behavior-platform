@@ -1,6 +1,7 @@
 import { expect, type Page, test } from "@playwright/test"
 
 import { firstSuperuser, firstSuperuserPassword } from "./config"
+import { mockResearchData } from "./research-data"
 
 async function waitForResearchPage(page: Page) {
   await expect(page.locator("[data-research-page-shell]")).toBeVisible()
@@ -29,6 +30,7 @@ test.beforeEach(async ({ page, request }, testInfo) => {
     window.localStorage.setItem("access_token", token)
     window.localStorage.setItem("vite-ui-theme", "light")
   }, body.access_token)
+  await mockResearchData(page)
 })
 
 test("core page commands remain wired on the integrated app", async ({

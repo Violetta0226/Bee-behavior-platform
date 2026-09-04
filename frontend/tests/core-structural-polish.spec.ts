@@ -3,6 +3,7 @@ import path from "node:path"
 import { expect, type Page, test } from "@playwright/test"
 
 import { firstSuperuser, firstSuperuserPassword } from "./config"
+import { mockResearchData } from "./research-data"
 
 const outputRoot = path.resolve(
   process.cwd(),
@@ -27,6 +28,7 @@ test.beforeEach(async ({ page, request }, testInfo) => {
   await page.addInitScript((token) => {
     window.localStorage.setItem("access_token", token)
   }, body.access_token)
+  await mockResearchData(page)
 })
 
 async function waitForResearchPage(page: Page) {
@@ -202,6 +204,7 @@ test("record the persistent-shell route transition sequence", async ({
   }, accessToken)
 
   const recordedPage = await context.newPage()
+  await mockResearchData(recordedPage)
   await recordedPage.goto("/tasks")
   await waitForResearchPage(recordedPage)
   const sidebarToggle = recordedPage.locator(".research-sidebar-toggle")
