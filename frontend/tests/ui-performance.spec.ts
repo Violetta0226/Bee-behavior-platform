@@ -42,9 +42,7 @@ test("dashboard preview loads only after user intent", async ({ page }) => {
   await expect.poll(() => videoFileRequests).toBe(1)
 })
 
-test("completed task ledger stays idle and skips off-screen paint", async ({
-  page,
-}) => {
+test("completed task ledger stays idle", async ({ page }) => {
   let taskListRequests = 0
   page.on("request", (request) => {
     if (request.url().includes("/api/v1/tasks/?skip=0&limit=100")) {
@@ -64,11 +62,6 @@ test("completed task ledger stays idle and skips off-screen paint", async ({
   await expect(page.locator(".process-section-heading > p")).toContainText(
     "当前无活动任务",
   )
-  expect(
-    await page
-      .locator(".process-record")
-      .evaluate((element) => getComputedStyle(element).contentVisibility),
-  ).toBe("auto")
 })
 
 test("document metadata and skip navigation follow the research shell", async ({

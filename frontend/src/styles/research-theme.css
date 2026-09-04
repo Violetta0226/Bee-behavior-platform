@@ -1429,9 +1429,8 @@ a.result-chain-step:hover strong {
   text-align: left;
 }
 
-/* Long scientific ledgers can grow to hundreds of records. Keep their
-   off-screen layout and paint work out of the initial interaction path. */
-.process-record,
+/* Long result indexes can grow to hundreds of records. Keep their off-screen
+   layout and paint work out of the initial interaction path. */
 .result-index button {
   content-visibility: auto;
   contain-intrinsic-size: auto 132px;
